@@ -1,0 +1,517 @@
+<!doctype html>
+<html lang="zh-Hant" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>流水號核對與合併</title>
+<script>(function(){var t=null,m=location.search.match(/[?&]theme=(dark|light)/);try{if(m){t=m[1];localStorage.setItem("pdf-tools-theme",t)}else t=localStorage.getItem("pdf-tools-theme")}catch(e){if(m)t=m[1]}document.documentElement.dataset.theme=t==="dark"?"dark":"light"})();</script>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23d65a0a'/%3E%3Cpath d='M20 10h18l12 12v28a4 4 0 0 1-4 4H20a4 4 0 0 1-4-4V14a4 4 0 0 1 4-4z' fill='white'/%3E%3Cpath d='M23 38l7 7 12-15' fill='none' stroke='%23d65a0a' stroke-width='5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<style>
+  :root {
+    color-scheme: light;
+    --bg: #fbfcfe; --panel: #ffffff; --fg: #19263a; --muted: #5d6b82; --line: #e3e9f2;
+    --accent: #d65a0a; --accent-fg: #ffffff; --accent-soft: #ffe9d6;
+    --have: #138a5a; --have-bg: #dcf5e8; --tick: #2563eb; --tick-bg: #e5eeff;
+    --miss: #c62828; --miss-bg: #fdecec; --warn-bg: #fff4d6; --warn: #7a5a00;
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --bg: #0f1724; --panel: #172133; --fg: #e7edf7; --muted: #94a3bb; --line: #2a3750;
+    --accent: #ff9a55; --accent-fg: #0b1220; --accent-soft: #402a17;
+    --have: #5fd3a0; --have-bg: #123a2a; --tick: #8fb0ff; --tick-bg: #1b2c52;
+    --miss: #ff8a80; --miss-bg: #3a1f24; --warn-bg: #3a3014; --warn: #f0cf7a;
+  }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  body { margin: 0; background: var(--bg); color: var(--fg);
+    font: 15px/1.5 "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", system-ui, sans-serif; }
+  main { max-width: 860px; margin: 0 auto; padding: 24px 16px 64px; display: flex; flex-direction: column; gap: 20px; }
+  h1 { font-size: 1.5rem; margin: 0; }
+  h2 { font-size: 1.05rem; margin: 0 0 10px; }
+  .sub { color: var(--muted); margin: 4px 0 0; }
+  section { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px; }
+  .row { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; }
+  label { display: flex; flex-direction: column; gap: 4px; font-size: .85rem; color: var(--muted); }
+  input[type=number], input[type=text], select { padding: 7px 9px; border: 1px solid var(--line); border-radius: 6px;
+    background: var(--bg); color: var(--fg); font: inherit; min-width: 0; }
+  input[type=number] { width: 7.5em; }
+  button { font: inherit; cursor: pointer; border-radius: 6px; border: 1px solid var(--line);
+    background: var(--panel); color: var(--fg); padding: 7px 12px; }
+  button:hover:not(:disabled) { border-color: var(--accent); }
+  button:disabled { opacity: .4; cursor: default; }
+  button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .primary { background: var(--accent); color: var(--accent-fg); border-color: var(--accent); font-weight: 600; padding: 9px 22px; }
+  #drop { border: 2px dashed var(--line); border-radius: 10px; padding: 48px 16px; text-align: center; cursor: pointer; }
+  #drop.over { border-color: var(--accent); background: var(--accent-soft); }
+  #drop strong { display: block; font-size: 1.15rem; margin-bottom: 4px; }
+  #drop span { color: var(--muted); font-size: .88rem; }
+  .stats { display: flex; flex-wrap: wrap; gap: 8px 20px; margin-bottom: 12px; font-variant-numeric: tabular-nums; }
+  .stats b { font-size: 1.15rem; }
+  .legend { display: flex; flex-wrap: wrap; gap: 14px; font-size: .82rem; color: var(--muted); margin-bottom: 10px; }
+  .sw { display: inline-block; width: 12px; height: 12px; border-radius: 3px; vertical-align: -1px; margin-right: 5px; border: 1px solid; }
+  #grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(64px, 1fr)); gap: 6px; max-height: 360px; overflow-y: auto; padding: 2px; }
+  .chip { padding: 5px 0; text-align: center; border-radius: 6px; border: 1px solid; font-size: .88rem;
+    font-variant-numeric: tabular-nums; cursor: pointer; user-select: none; background: transparent; }
+  .chip.file { color: var(--have); background: var(--have-bg); border-color: var(--have); cursor: default; }
+  .chip.tick { color: var(--tick); background: var(--tick-bg); border-color: var(--tick); }
+  .chip.miss { color: var(--miss); background: var(--miss-bg); border-color: var(--miss); }
+  .missbox { background: var(--miss-bg); border: 1px solid var(--miss); border-radius: 8px; padding: 12px; word-break: break-all;
+    font-variant-numeric: tabular-nums; }
+  .missbox.ok { background: var(--have-bg); border-color: var(--have); color: var(--have); }
+  #flist { list-style: none; margin: 12px 0 0; padding: 0; display: flex; flex-direction: column; gap: 6px; max-height: 320px; overflow-y: auto; }
+  #flist li { display: flex; align-items: center; gap: 10px; border: 1px solid var(--line); border-radius: 6px; padding: 6px 10px; }
+  #flist .sn { width: 4.5em; font-weight: 600; font-variant-numeric: tabular-nums; }
+  #flist .sn.none { color: var(--miss); }
+  #flist .nm { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  #flist .mt { color: var(--muted); font-size: .8rem; white-space: nowrap; }
+  #flist li.warn { background: var(--warn-bg); border-color: var(--warn); }
+  .note { color: var(--warn); font-size: .82rem; }
+  #msg { padding: 10px 12px; border-radius: 6px; background: var(--accent-soft); display: none; }
+  #msg.show { display: block; }
+  #msg.err { background: var(--miss-bg); color: var(--miss); }
+  .hint { color: var(--muted); font-size: .82rem; }
+  .theme-btn { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border: 1px solid var(--line);
+    border-radius: 999px; background: var(--panel); color: var(--fg); font: inherit; font-size: .85rem; cursor: pointer; white-space: nowrap; }
+  .theme-btn:hover { border-color: var(--accent); }
+  .theme-btn svg { width: 16px; height: 16px; }
+  .theme-btn .i-sun, .theme-btn .lbl-light { display: none; }
+  :root[data-theme="dark"] .theme-btn .i-sun, :root[data-theme="dark"] .theme-btn .lbl-light { display: inline; }
+  :root[data-theme="dark"] .theme-btn .i-moon, :root[data-theme="dark"] .theme-btn .lbl-dark { display: none; }
+  .home { display: inline-flex; align-items: center; gap: 8px; align-self: flex-start; padding: 5px 14px 5px 6px;
+    border: 1px solid var(--line); border-radius: 999px; background: var(--panel); color: var(--fg);
+    text-decoration: none; font-size: .88rem; font-weight: 600; white-space: nowrap; transition: border-color .15s, color .15s; }
+  .home .hi { width: 26px; height: 26px; border-radius: 50%; background: var(--accent-soft); color: var(--accent);
+    display: flex; align-items: center; justify-content: center; }
+  .home .hi svg { width: 14px; height: 14px; }
+  .home:hover, .home:focus-visible { border-color: var(--accent); color: var(--accent); outline: none; }
+  .home:focus-visible { box-shadow: 0 0 0 3px var(--accent-soft); }
+  .topbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
+
+  /* ===== 共用：頂部列與版面比例（所有頁面一致） ===== */
+  body { font-size: 15px; line-height: 1.5; }
+  h1 { font-size: 1.5rem; line-height: 1.3; }
+  .topbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; height: 56px; margin: 0; padding: 0 24px; background: var(--panel); border-bottom: 1px solid var(--line); flex: none; }
+  .topbar .home { align-self: center; }
+  .topbar .theme-btn { margin-left: auto; padding: 6px 12px; font-size: .85rem; }
+
+  #dropOv { position: fixed; inset: 0; z-index: 100; display: none; align-items: center; justify-content: center; pointer-events: none;
+    background: color-mix(in srgb, var(--accent) 14%, transparent); border: 4px dashed var(--accent); }
+  #dropOv.show { display: flex; }
+  #dropOv b { padding: 16px 28px; border-radius: 12px; background: var(--panel); color: var(--accent); font-size: 1.3rem; box-shadow: 0 8px 28px rgba(0,0,0,.25); }
+</style>
+</head>
+<body>
+<div id="dropOv" aria-hidden="true"><b>放開即可加入檔案</b></div>
+<div class="topbar"><a class="home" data-nav="index.html" href="index.html" title="回到工具箱首頁"><span class="hi" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor"><rect x="3" y="3" width="8" height="8" rx="2"/><rect x="13" y="3" width="8" height="8" rx="2"/><rect x="3" y="13" width="8" height="8" rx="2"/><rect x="13" y="13" width="8" height="8" rx="2"/></svg></span>工具箱首頁</a><button class="theme-btn" id="themeBtn" type="button" aria-label="切換深色或淺色主題" title="切換深色或淺色主題"><svg class="i-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg><svg class="i-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg><span class="lbl-dark">深色</span><span class="lbl-light">淺色</span></button></div>
+<main>
+  
+  <header>
+    <h1>流水號核對與合併</h1>
+    <p class="sub">設定流水號範圍，拖入檔案自動打勾，列出還缺哪些號碼，補齊後依流水號順序合併。檔案只在你的瀏覽器內處理。</p>
+  </header>
+
+  <section>
+    <h2>1. 設定範圍與檔名規則</h2>
+    <div class="row">
+      <label>起始號<input id="start" type="number" min="0" value="1"></label>
+      <label>結束號<input id="end" type="number" min="0" value="100"></label>
+      <label>顯示位數（留空自動）<input id="pad" type="number" min="1" max="12" placeholder="自動"></label>
+      <label>從檔名取流水號
+        <select id="mode">
+          <option value="first">第一組數字</option>
+          <option value="last">最後一組數字</option>
+          <option value="custom">自訂規則（正規表示式）</option>
+        </select>
+      </label>
+      <label id="rxWrap" hidden>規則，第一個括號為流水號<input id="rx" type="text" value="(\d+)" spellcheck="false"></label>
+    </div>
+    <p class="hint" id="exTxt"></p>
+  </section>
+
+  <section>
+    <h2>2. 核對結果</h2>
+    <div class="stats" id="stats"></div>
+    <div class="legend">
+      <span><i class="sw" style="color:var(--have);background:var(--have-bg)"></i>已有檔案</span>
+      <span><i class="sw" style="color:var(--tick);background:var(--tick-bg)"></i>手動勾選（已有，但不在這次合併）</span>
+      <span><i class="sw" style="color:var(--miss);background:var(--miss-bg)"></i>缺少</span>
+    </div>
+    <div id="grid"></div>
+    <div class="row" style="margin-top:12px">
+      <button id="tickAll">全部勾選</button>
+      <button id="tickNone">取消手動勾選</button>
+    </div>
+    <h2 style="margin-top:18px">還缺的流水號</h2>
+    <div class="missbox" id="missbox"></div>
+    <div class="row" style="margin-top:10px">
+      <button id="copyMiss">複製缺號清單</button>
+    </div>
+  </section>
+
+  <section>
+    <h2>3. 加入檔案</h2>
+    <div id="drop" tabindex="0" role="button" aria-label="選擇或拖曳 PDF 檔案">
+      <strong>把整個資料夾或 PDF 拖到這個頁面的任何地方</strong>
+      <span>放開就會自動加入；也可以點這裡選檔案，支援 JPG、PNG（每張一頁）</span>
+    </div>
+    <div class="row" style="margin-top:10px">
+      <button id="pickDir" type="button">選擇資料夾</button>
+      <span class="hint" style="align-self:center">資料夾內的子資料夾也會一起讀取。載入資料夾會取代目前的清單，補檔案後再拖一次即可更新。</span>
+    </div>
+    <input id="file" type="file" accept="application/pdf,image/jpeg,image/png" multiple hidden>
+    <input id="dirIn" type="file" webkitdirectory multiple hidden>
+    <ul id="flist"></ul>
+  </section>
+
+  <section>
+    <h2>4. 合併</h2>
+    <div class="row">
+      <label style="flex:1;min-width:200px">輸出檔名<input id="outName" type="text" spellcheck="false"></label>
+      <label style="flex-direction:row;align-items:center;gap:6px;color:var(--fg);cursor:pointer;white-space:nowrap"><input type="checkbox" id="even" checked style="width:16px;height:16px;accent-color:var(--accent)">補足偶數頁</label>
+      <button class="primary" id="go" disabled>依流水號合併並下載</button>
+    </div>
+    <p class="hint">合併時只放入有檔案的號碼，依流水號由小到大排列。缺號補齊後再把新檔案拖進來，重新合併即可。</p>
+    <div id="msg" role="status" style="margin-top:12px"></div>
+  </section>
+</main>
+
+<script>
+(function () {
+  var $ = function (s) { return document.querySelector(s); };
+  var files = [], nextId = 1, manual = new Set();
+  var KEY = "serial-check-v1";
+  var MAX_RANGE = 5000;
+
+  function today() { var d = new Date(), p = function (n) { return String(n).padStart(2, "0"); };
+    return d.getFullYear() + p(d.getMonth() + 1) + p(d.getDate()); }
+  $("#outName").value = "合併_" + today() + ".pdf";
+
+  function esc(s) { return s.replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
+  function size(n) { return n > 1048576 ? (n / 1048576).toFixed(1) + " MB" : Math.max(1, Math.round(n / 1024)) + " KB"; }
+  function show(t, err) { var m = $("#msg"); m.textContent = t; m.className = "show" + (err ? " err" : ""); }
+  function hide() { $("#msg").className = ""; }
+
+  /* 設定的儲存與讀取（失敗時忽略） */
+  function save() {
+    try { localStorage.setItem(KEY, JSON.stringify({ start: $("#start").value, end: $("#end").value,
+      pad: $("#pad").value, mode: $("#mode").value, rx: $("#rx").value, manual: Array.from(manual) })); } catch (e) {}
+  }
+  function load() {
+    try { var s = JSON.parse(localStorage.getItem(KEY) || "null"); if (!s) return;
+      $("#start").value = s.start; $("#end").value = s.end; $("#pad").value = s.pad;
+      $("#mode").value = s.mode; $("#rx").value = s.rx; manual = new Set(s.manual || []); } catch (e) {}
+  }
+
+  function cfg() {
+    var a = parseInt($("#start").value, 10), b = parseInt($("#end").value, 10);
+    if (isNaN(a) || isNaN(b) || a < 0 || b < a) return null;
+    if (b - a + 1 > MAX_RANGE) return { error: "範圍最多 " + MAX_RANGE + " 個號碼" };
+    var p = parseInt($("#pad").value, 10);
+    return { a: a, b: b, pad: isNaN(p) ? String(b).length : p };
+  }
+  function fmt(n, pad) { return String(n).padStart(pad, "0"); }
+
+  function extract(name) {
+    var base = name.replace(/\.[^.]+$/, ""), mode = $("#mode").value, m;
+    if (mode === "first") { m = base.match(/\d+/); return m ? parseInt(m[0], 10) : null; }
+    if (mode === "last") { m = base.match(/\d+/g); return m ? parseInt(m[m.length - 1], 10) : null; }
+    try { m = base.match(new RegExp($("#rx").value)); } catch (e) { return null; }
+    if (!m) return null;
+    var v = parseInt(m[1] !== undefined ? m[1] : m[0], 10);
+    return isNaN(v) ? null : v;
+  }
+
+  function rangeText(nums, pad) {
+    var out = [], i = 0;
+    while (i < nums.length) {
+      var j = i;
+      while (j + 1 < nums.length && nums[j + 1] === nums[j] + 1) j++;
+      out.push(j > i ? fmt(nums[i], pad) + "–" + fmt(nums[j], pad) : fmt(nums[i], pad));
+      i = j + 1;
+    }
+    return out.join("、");
+  }
+
+  if (window.pdfjsLib) pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+  async function rasterPages(buf) {
+    var d = await pdfjsLib.getDocument({ data: buf.slice(0) }).promise, n = d.numPages; d.destroy(); return n;
+  }
+  /* 有權限限制（加密）的 PDF：把每頁轉成圖片再放進合併檔 */
+  async function rasterInto(out, it, evenPad) {
+    var d = await pdfjsLib.getDocument({ data: it.buf.slice(0) }).promise, lastSz = null, n = d.numPages;
+    try {
+      for (var i = 1; i <= n; i++) {
+        var pg = await d.getPage(i), v1 = pg.getViewport({ scale: 1 }), v2 = pg.getViewport({ scale: 2.5 });
+        var c = document.createElement("canvas"); c.width = Math.floor(v2.width); c.height = Math.floor(v2.height);
+        var ctx = c.getContext("2d"); ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, c.width, c.height);
+        await pg.render({ canvasContext: ctx, viewport: v2 }).promise;
+        var blob = await new Promise(function (r) { c.toBlob(r, "image/jpeg", 0.88); });
+        var im = await out.embedJpg(await blob.arrayBuffer());
+        out.addPage([v1.width, v1.height]).drawImage(im, { x: 0, y: 0, width: v1.width, height: v1.height });
+        lastSz = [v1.width, v1.height]; c.width = c.height = 0;
+      }
+    } finally { d.destroy(); }
+    if (evenPad && n % 2 === 1 && lastSz) { out.addPage(lastSz); return 1; }
+    return 0;
+  }
+
+  function reserial() { files.forEach(function (f) { f.serial = extract(f.name); }); }
+
+  async function addFiles(list, replace, label) {
+    hide();
+    if (replace) files = [];
+    var bad = [];
+    for (var f of Array.from(list)) {
+      var img = /^image\/(jpeg|png)$/.test(f.type), pdf = f.type === "application/pdf" || /\.pdf$/i.test(f.name);
+      if (!img && !pdf) { bad.push(f.name + "（不支援的格式）"); continue; }
+      try {
+        var buf = await f.arrayBuffer(), pages = 1, raster = false;
+        if (pdf) {
+          try {
+            var d = await PDFLib.PDFDocument.load(buf, { ignoreEncryption: true });
+            if (d.isEncrypted) throw new Error("encrypted");
+            pages = d.getPageCount();
+          } catch (e1) { pages = await rasterPages(buf); raster = true; }
+        }
+        files.push({ id: nextId++, name: f.name, kind: img ? "img" : "pdf", type: f.type, pages: pages, size: f.size, buf: buf, serial: extract(f.name), raster: raster });
+      } catch (e) { bad.push(f.name + "（無法讀取，可能需要開啟密碼或檔案損毀）"); }
+    }
+    render();
+    if (bad.length) show((label ? "已載入資料夾「" + label + "」，但" : "") + "以下檔案未加入：" + bad.join("、"), true);
+    else if (label) show("已載入資料夾「" + label + "」：" + files.length + " 個檔案。");
+  }
+
+  /* ---------- 資料夾讀取 ---------- */
+  var MEDIA = /\.(pdf|jpe?g|png)$/i;
+  async function walkDir(dir, out) {
+    for await (var ent of dir.values()) {
+      try {
+        if (ent.kind === "file") { if (MEDIA.test(ent.name)) out.push(await ent.getFile()); }
+        else await walkDir(ent, out);
+      } catch (e) { skippedN++; }
+    }
+  }
+  var skippedN = 0;
+  function entryFile(en) { return new Promise(function (ok, no) { en.file(ok, no); }); }
+  function readAll(reader) {
+    return new Promise(function (ok, no) {
+      var all = [];
+      (function next() { reader.readEntries(function (b) { if (!b.length) ok(all); else { all = all.concat(Array.from(b)); next(); } }, no); })();
+    });
+  }
+  async function walkEntry(en, out) {
+    try {
+      if (en.isFile) { if (MEDIA.test(en.name)) out.push(await entryFile(en)); }
+      else if (en.isDirectory) { for (var k of await readAll(en.createReader())) await walkEntry(k, out); }
+    } catch (e) { skippedN++; }
+  }
+  function skipNote() { return skippedN ? "（有 " + skippedN + " 個檔案讀不到，已略過）" : ""; }
+
+  $("#pickDir").addEventListener("click", async function () {
+    if (window.showDirectoryPicker) {
+      try {
+        var dir = await window.showDirectoryPicker();
+        skippedN = 0; var out = []; await walkDir(dir, out);
+        await addFiles(out, true, dir.name);
+        if (skippedN) show($("#msg").textContent + skipNote(), true);
+        return;
+      } catch (e) { if (e && e.name === "AbortError") return; }
+    }
+    $("#dirIn").click();
+  });
+  $("#dirIn").addEventListener("change", function () {
+    var list = Array.from(this.files).filter(function (f) { return MEDIA.test(f.name); });
+    var label = this.files.length && this.files[0].webkitRelativePath ? this.files[0].webkitRelativePath.split("/")[0] : "";
+    if (!this.files.length) show("瀏覽器沒有回傳任何檔案，請改用拖曳資料夾。", true);
+    else if (!list.length) show("這個資料夾裡沒有 PDF、JPG 或 PNG 檔案。", true);
+    else addFiles(list, true, label || "資料夾");
+    this.value = "";
+  });
+
+  function render() {
+    var c = cfg();
+    $("#exTxt").textContent = "";
+    if (!c || c.error) {
+      $("#grid").innerHTML = ""; $("#stats").innerHTML = "";
+      $("#missbox").className = "missbox"; $("#missbox").textContent = c && c.error ? c.error : "請輸入正確的起始號與結束號。";
+      $("#go").disabled = true; renderFiles(null); return;
+    }
+    var byS = new Map();
+    files.forEach(function (f) { if (f.serial !== null && f.serial >= c.a && f.serial <= c.b) {
+      byS.set(f.serial, (byS.get(f.serial) || 0) + 1); } });
+
+    var html = [], missing = [], haveN = 0, tickN = 0;
+    for (var n = c.a; n <= c.b; n++) {
+      var st = byS.has(n) ? "file" : manual.has(n) ? "tick" : "miss";
+      if (st === "file") haveN++; else if (st === "tick") tickN++; else missing.push(n);
+      html.push('<button class="chip ' + st + '" data-n="' + n + '" aria-label="' + fmt(n, c.pad) + '">' + fmt(n, c.pad) + '</button>');
+    }
+    $("#grid").innerHTML = html.join("");
+    var total = c.b - c.a + 1;
+    $("#stats").innerHTML = '<span>範圍共 <b>' + total + '</b> 個</span><span>有檔案 <b>' + haveN + '</b></span>' +
+      '<span>手動勾選 <b>' + tickN + '</b></span><span>缺少 <b>' + missing.length + '</b></span>';
+    var mb = $("#missbox");
+    if (!files.length) { mb.className = "missbox"; mb.textContent = "還沒有加入檔案。請在下方「加入檔案」拖入資料夾或 PDF，這裡就會列出缺少的流水號。"; }
+    else if (missing.length) { mb.className = "missbox"; mb.textContent = rangeText(missing, c.pad); }
+    else { mb.className = "missbox ok"; mb.textContent = "沒有缺號，全部都齊了。"; }
+    mb.dataset.text = missing.length && files.length ? rangeText(missing, c.pad) : "";
+    $("#exTxt").textContent = files.length ? "" : "例如檔名「合約_" + fmt(c.a, c.pad) + ".pdf」會被辨識為流水號 " + fmt(c.a, c.pad) + "。";
+    renderFiles(c);
+    $("#go").disabled = !files.some(function (f) { return f.serial !== null && f.serial >= c.a && f.serial <= c.b; });
+  }
+
+  function sortedFiles(c) {
+    return files.slice().sort(function (x, y) {
+      var xs = x.serial === null ? Infinity : x.serial, ys = y.serial === null ? Infinity : y.serial;
+      return xs - ys || x.name.localeCompare(y.name, "zh-Hant", { numeric: true });
+    });
+  }
+
+  function renderFiles(c) {
+    var ul = $("#flist");
+    if (!files.length) { ul.innerHTML = ""; return; }
+    var count = new Map();
+    files.forEach(function (f) { if (f.serial !== null) count.set(f.serial, (count.get(f.serial) || 0) + 1); });
+    var pad = c ? c.pad : 3;
+    ul.innerHTML = sortedFiles(c).map(function (f) {
+      var out = c && f.serial !== null && (f.serial < c.a || f.serial > c.b);
+      var note = f.serial === null ? "找不到流水號，不會合併" : out ? "超出範圍，不會合併" : count.get(f.serial) > 1 ? "流水號重複" : "";
+      return '<li class="' + (note ? "warn" : "") + '"><span class="sn' + (f.serial === null ? " none" : "") + '">' +
+        (f.serial === null ? "？" : fmt(f.serial, pad)) + '</span><span class="nm" title="' + esc(f.name) + '">' + esc(f.name) +
+        '</span>' + (note ? '<span class="note">' + note + '</span>' : "") +
+        '<span class="mt">' + (f.kind === "img" ? "圖片" : f.pages + " 頁") + ' · ' + size(f.size) + (f.raster ? ' · 加密檔' : '') + '</span>' +
+        '<button data-del="' + f.id + '" aria-label="移除">✕</button></li>';
+    }).join("");
+  }
+
+  /* 事件 */
+  $("#grid").addEventListener("click", function (e) {
+    var b = e.target.closest(".chip"); if (!b || b.classList.contains("file")) return;
+    var n = +b.dataset.n; if (manual.has(n)) manual.delete(n); else manual.add(n);
+    save(); render();
+  });
+  $("#flist").addEventListener("click", function (e) {
+    var id = e.target.dataset.del; if (!id) return;
+    files = files.filter(function (f) { return f.id !== +id; }); render();
+  });
+  ["start", "end", "pad", "rx"].forEach(function (id) { $("#" + id).addEventListener("input", function () { reserial(); save(); render(); }); });
+  $("#mode").addEventListener("change", function () { $("#rxWrap").hidden = this.value !== "custom"; reserial(); save(); render(); });
+  $("#tickAll").addEventListener("click", function () {
+    var c = cfg(); if (!c || c.error) return; for (var n = c.a; n <= c.b; n++) manual.add(n); save(); render(); });
+  $("#tickNone").addEventListener("click", function () { manual.clear(); save(); render(); });
+
+  $("#copyMiss").addEventListener("click", function () {
+    var t = $("#missbox").dataset.text || ""; if (!t) { show("目前沒有缺號可以複製。"); return; }
+    var done = function () { show("已複製缺號清單。"); };
+    var fallback = function () {
+      var r = document.createRange(); r.selectNodeContents($("#missbox"));
+      var s = getSelection(); s.removeAllRanges(); s.addRange(r); show("請按 Ctrl+C 複製已選取的缺號清單。"); };
+    try { navigator.clipboard.writeText(t).then(done, fallback); } catch (e) { fallback(); }
+  });
+
+  var drop = $("#drop"), input = $("#file");
+  drop.addEventListener("click", function () { input.click(); });
+  drop.addEventListener("keydown", function (e) { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); input.click(); } });
+  input.addEventListener("change", function () { addFiles(input.files); input.value = ""; });
+  var ov = $("#dropOv"), depth = 0;
+  function hasFiles(e) { return e.dataTransfer && Array.prototype.indexOf.call(e.dataTransfer.types || [], "Files") !== -1; }
+  function endOver() { depth = 0; ov.classList.remove("show"); drop.classList.remove("over"); }
+  window.addEventListener("dragenter", function (e) { if (!hasFiles(e)) return; e.preventDefault(); depth++; ov.classList.add("show"); drop.classList.add("over"); });
+  window.addEventListener("dragover", function (e) { if (hasFiles(e)) e.preventDefault(); });
+  window.addEventListener("dragleave", function (e) { if (!hasFiles(e)) return; depth = Math.max(0, depth - 1); if (!depth) endOver(); });
+  window.addEventListener("drop", async function (e) {
+    endOver();
+    if (!hasFiles(e)) return;
+    e.preventDefault();
+    var dt = e.dataTransfer, ents = [];
+    /* 必須在 await 之前同步取得 */
+    var hps = dt.items ? Array.from(dt.items).map(function (it) {
+      return it.kind === "file" && it.getAsFileSystemHandle ? it.getAsFileSystemHandle().catch(function () { return null; }) : null;
+    }) : [];
+    if (dt.items) Array.from(dt.items).forEach(function (it) { var en = it.webkitGetAsEntry && it.webkitGetAsEntry(); if (en) ents.push(en); });
+    var plain = Array.from(dt.files);
+    skippedN = 0;
+    var hs = (await Promise.all(hps)).filter(Boolean);
+    var dirs = hs.filter(function (h) { return h.kind === "directory"; });
+    if (dirs.length) {
+      try {
+        show("讀取資料夾中…");
+        var out = []; for (var d of dirs) await walkDir(d, out);
+        for (var h of hs) if (h.kind === "file" && MEDIA.test(h.name)) out.push(await h.getFile());
+        await addFiles(out, true, dirs.map(function (x) { return x.name; }).join("、"));
+        if (skippedN) show($("#msg").textContent + skipNote(), true);
+        return;
+      } catch (err) { skippedN = 0; }
+    }
+    if (ents.some(function (en) { return en.isDirectory; })) {
+      try {
+        show("讀取資料夾中…");
+        var out2 = []; for (var en of ents) await walkEntry(en, out2);
+        var nm = ents.filter(function (x) { return x.isDirectory; }).map(function (x) { return x.name; }).join("、");
+        await addFiles(out2, true, nm);
+        if (skippedN) show($("#msg").textContent + skipNote(), true);
+      } catch (err) { show("讀取資料夾失敗：" + ((err && (err.name + " " + err.message)) || String(err)), true); }
+    } else if (plain.length) addFiles(plain);
+  });
+
+  $("#go").addEventListener("click", async function () {
+    var btn = this, c = cfg(); hide();
+    if (!c || c.error) return;
+    var use = sortedFiles(c).filter(function (f) { return f.serial !== null && f.serial >= c.a && f.serial <= c.b; });
+    try {
+      btn.disabled = true; btn.textContent = "合併中…";
+      var out = await PDFLib.PDFDocument.create();
+      var evenPad = $("#even").checked, blanks = 0;
+      for (var f of use) {
+        if (f.raster) {
+          blanks += await rasterInto(out, f, evenPad);
+        } else if (f.kind === "pdf") {
+          var src = await PDFLib.PDFDocument.load(f.buf, { ignoreEncryption: true });
+          var pgs = await out.copyPages(src, src.getPageIndices());
+          var lastPg;
+          pgs.forEach(function (p) { lastPg = out.addPage(p); });
+          if (evenPad && pgs.length % 2 === 1) { var sz = lastPg.getSize(); out.addPage([sz.width, sz.height]); blanks++; }
+        } else {
+          var im = f.type === "image/png" ? await out.embedPng(f.buf) : await out.embedJpg(f.buf);
+          var pg = out.addPage([im.width, im.height]);
+          pg.drawImage(im, { x: 0, y: 0, width: im.width, height: im.height });
+          if (evenPad) { out.addPage([im.width, im.height]); blanks++; }
+        }
+      }
+      var bytes = await out.save();
+      var name = $("#outName").value.trim() || "合併.pdf";
+      if (!/\.pdf$/i.test(name)) name += ".pdf";
+      var url = URL.createObjectURL(new Blob([bytes], { type: "application/pdf" }));
+      var a = document.createElement("a"); a.href = url; a.download = name;
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(function () { URL.revokeObjectURL(url); }, 10000);
+      show("完成：" + name + "（" + use.length + " 個檔案，" + out.getPageCount() + " 頁，" + size(bytes.length) + (blanks ? "，補了 " + blanks + " 張空白頁" : "") + "）");
+    } catch (e) { show("合併失敗：" + e.message, true); }
+    finally { btn.textContent = "依流水號合併並下載"; render(); }
+  });
+
+  load();
+  $("#rxWrap").hidden = $("#mode").value !== "custom";
+  try { var ev = localStorage.getItem("serial-check-even"); if (ev !== null) $("#even").checked = ev === "1"; } catch (e) {}
+  $("#even").addEventListener("change", function () { try { localStorage.setItem("serial-check-even", this.checked ? "1" : "0"); } catch (e) {} });
+  if (!window.PDFLib) show("無法載入 PDF 處理元件，請確認網路連線後重新整理頁面。", true);
+  render();
+})();
+</script>
+<script>
+(function () {
+  function cur() { return document.documentElement.dataset.theme === "dark" ? "dark" : "light"; }
+  function sync() { var t = cur(); document.querySelectorAll("a[data-nav]").forEach(function (a) { a.href = a.getAttribute("data-nav") + "?theme=" + t; }); }
+  var b = document.getElementById("themeBtn");
+  if (b) b.addEventListener("click", function () {
+    var n = cur() === "dark" ? "light" : "dark"; document.documentElement.dataset.theme = n;
+    try { localStorage.setItem("pdf-tools-theme", n); } catch (e) {}
+    sync();
+  });
+  sync();
+})();
+</script>
+</body>
+</html>

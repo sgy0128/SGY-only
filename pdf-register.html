@@ -1,0 +1,2026 @@
+<!doctype html>
+<html lang="zh-Hant" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>陳報單登記</title>
+<script>(function(){var t=null,m=location.search.match(/[?&]theme=(dark|light)/);try{if(m){t=m[1];localStorage.setItem("pdf-tools-theme",t)}else t=localStorage.getItem("pdf-tools-theme")}catch(e){if(m)t=m[1]}document.documentElement.dataset.theme=t==="dark"?"dark":"light"})();</script>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%232f855a'/%3E%3Cpath d='M20 10h18l12 12v28a4 4 0 0 1-4 4H20a4 4 0 0 1-4-4V14a4 4 0 0 1 4-4z' fill='white'/%3E%3Cpath d='M23 30h18M23 37h18M23 44h11' stroke='%232f855a' stroke-width='3.5' stroke-linecap='round'/%3E%3C/svg%3E">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<style>
+  :root {
+    color-scheme: light;
+    --bg: #fbfcfe; --panel: #ffffff; --fg: #19263a; --muted: #5d6b82; --line: #e3e9f2; --stage: #e4eaf3;
+    --accent: #2f855a; --accent-fg: #ffffff; --accent-soft: #e2f4ea;
+    --danger: #c62828; --danger-soft: #fdecec; --warn: #7a5a00; --warn-bg: #fff4d6;
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --bg: #0f1724; --panel: #172133; --fg: #e7edf7; --muted: #94a3bb; --line: #2a3750; --stage: #0b111c;
+    --accent: #7ee2a8; --accent-fg: #0b1220; --accent-soft: #17382a;
+    --danger: #ff8a80; --danger-soft: #3a1f24; --warn: #f0cf7a; --warn-bg: #3a3014;
+  }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  body { margin: 0; background: var(--bg); color: var(--fg);
+    font: 15px/1.5 "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", system-ui, sans-serif; }
+  main { max-width: 1280px; margin: 0 auto; padding: 24px 16px 64px; display: flex; flex-direction: column; gap: 16px; }
+  h1 { font-size: 1.5rem; margin: 0 0 4px; }
+  h2 { font-size: 1.05rem; margin: 0 0 10px; }
+  .sub { color: var(--muted); margin: 0; }
+  .box { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px; }
+  .topbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  button { font: inherit; cursor: pointer; border-radius: 6px; border: 1px solid var(--line); background: var(--panel); color: var(--fg); padding: 7px 12px; }
+  button:hover:not(:disabled), a.lnkbtn:hover { border-color: var(--accent); }
+  a.lnkbtn { display: inline-block; font: inherit; border-radius: 6px; border: 1px solid var(--line); background: var(--panel); color: var(--fg); padding: 7px 12px; text-decoration: none; }
+  a.lnkbtn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  button:disabled { opacity: .4; cursor: default; }
+  button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .primary { background: var(--accent); color: var(--accent-fg); border-color: var(--accent); font-weight: 600; padding: 9px 20px; }
+  input[type=text], textarea, select { width: 100%; padding: 7px 9px; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); color: var(--fg); font: inherit; min-width: 0; }
+  textarea { min-height: 96px; resize: vertical; }
+  label.f { display: flex; flex-direction: column; gap: 4px; font-size: .85rem; color: var(--muted); margin-top: 10px; }
+  label.chk { display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: .9rem; }
+  label.chk input { width: 16px; height: 16px; accent-color: var(--accent); }
+  .radios { display: flex; flex-wrap: wrap; gap: 6px 18px; }
+  .radios label { display: flex; align-items: center; gap: 6px; cursor: pointer; }
+  .radios input { accent-color: var(--accent); }
+  .row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-top: 10px; }
+  .hint { color: var(--muted); font-size: .82rem; margin: 6px 0 0; }
+  .two { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  #msg { padding: 10px 12px; border-radius: 6px; background: var(--accent-soft); display: none; word-break: break-all; }
+  #msg.show { display: block; }
+  #msg.err { background: var(--danger-soft); color: var(--danger); }
+  #msg.warn { background: var(--warn-bg); color: var(--warn); }
+  #drop { border: 2px dashed var(--line); border-radius: 10px; padding: 44px 16px; text-align: center; cursor: pointer; transition: .15s; }
+  #drop.over { border-color: var(--accent); background: var(--accent-soft); }
+  #drop strong { display: block; margin-bottom: 2px; }
+  #drop span { color: var(--muted); font-size: .9rem; }
+  .bar { height: 8px; border-radius: 4px; background: var(--line); overflow: hidden; margin-top: 10px; }
+  .bar i { display: block; height: 100%; width: 0; background: var(--accent); transition: width .2s; }
+  .work { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(340px, .85fr); gap: 16px; align-items: start; }
+  .viewer { background: var(--stage); border: 1px solid var(--line); border-radius: 10px; height: 82vh; overflow: auto; position: sticky; top: 8px; }
+  .viewer img { display: block; width: 100%; cursor: zoom-in; }
+  .viewer.zoom img { width: 220%; cursor: zoom-out; }
+  .nav { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+  .nav .pg { flex: 1; text-align: center; font-weight: 600; }
+  .st { font-size: .8rem; color: var(--muted); text-align: center; }
+  .field { margin-top: 12px; }
+  .field > .lb { display: flex; justify-content: space-between; font-size: .85rem; color: var(--muted); margin-bottom: 4px; }
+  .field .note { font-size: .8rem; margin-top: 3px; color: var(--muted); }
+  .field.uncertain input[type=text] { border-color: var(--warn); background: var(--warn-bg); }
+  .field.uncertain .note { color: var(--warn); }
+  .field.bad input[type=text] { border-color: var(--danger); background: var(--danger-soft); }
+  .field.bad .note { color: var(--danger); }
+  .crop { display: block; max-width: 100%; max-height: 90px; margin-bottom: 4px; border: 1px solid var(--line); border-radius: 4px; background: #fff; }
+  .strip { display: block; max-height: 200px; max-width: 100%; cursor: zoom-in; border: 1px solid var(--line); border-radius: 4px; background: #fff; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+  .chips button { padding: 3px 10px; border-radius: 999px; background: var(--accent-soft); border-color: var(--accent); }
+  .grp { border-top: 1px dashed var(--line); margin-top: 14px; padding-top: 2px; }
+  table { width: 100%; border-collapse: collapse; font-size: .85rem; }
+  th, td { border-bottom: 1px solid var(--line); padding: 5px 7px; text-align: left; white-space: nowrap; }
+  th { color: var(--muted); font-weight: 600; position: sticky; top: 0; background: var(--panel); }
+  tr.cur td { background: var(--accent-soft); }
+  td.nolist { color: #b45309; font-weight: 600; }
+  :root[data-theme="dark"] td.nolist { color: #fbbf24; }
+  tr.skip td { opacity: .45; text-decoration: line-through; }
+  tr { cursor: pointer; }
+  td.miss { color: var(--danger); }
+  td.unc { background: var(--warn-bg); }
+  .tw { max-height: 360px; overflow: auto; border: 1px solid var(--line); border-radius: 6px; }
+  details summary { cursor: pointer; color: var(--muted); font-size: .85rem; margin-top: 8px; }
+  @media (max-width: 900px) { .work { grid-template-columns: 1fr; } .viewer { position: static; height: 60vh; } }
+  .theme-btn { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border: 1px solid var(--line);
+    border-radius: 999px; background: var(--panel); color: var(--fg); font: inherit; font-size: .85rem; cursor: pointer; white-space: nowrap; }
+  .theme-btn:hover { border-color: var(--accent); }
+  .theme-btn svg { width: 16px; height: 16px; }
+  .theme-btn .i-sun, .theme-btn .lbl-light { display: none; }
+  :root[data-theme="dark"] .theme-btn .i-sun, :root[data-theme="dark"] .theme-btn .lbl-light { display: inline; }
+  :root[data-theme="dark"] .theme-btn .i-moon, :root[data-theme="dark"] .theme-btn .lbl-dark { display: none; }
+  .home { display: inline-flex; align-items: center; gap: 8px; align-self: flex-start; padding: 5px 14px 5px 6px;
+    border: 1px solid var(--line); border-radius: 999px; background: var(--panel); color: var(--fg);
+    text-decoration: none; font-size: .88rem; font-weight: 600; white-space: nowrap; transition: border-color .15s, color .15s; }
+  .home .hi { width: 26px; height: 26px; border-radius: 50%; background: var(--accent-soft); color: var(--accent);
+    display: flex; align-items: center; justify-content: center; }
+  .home .hi svg { width: 14px; height: 14px; }
+  .home:hover, .home:focus-visible { border-color: var(--accent); color: var(--accent); outline: none; }
+  .home:focus-visible { box-shadow: 0 0 0 3px var(--accent-soft); }
+
+  /* ===== 共用：頂部列與版面比例（所有頁面一致） ===== */
+  body { font-size: 15px; line-height: 1.5; }
+  h1 { font-size: 1.5rem; line-height: 1.3; }
+  .topbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; height: 56px; margin: 0; padding: 0 24px; background: var(--panel); border-bottom: 1px solid var(--line); flex: none; }
+  .topbar .home { align-self: center; }
+  .topbar .theme-btn { margin-left: auto; padding: 6px 12px; font-size: .85rem; }
+
+  #dropOv { position: fixed; inset: 0; z-index: 100; display: none; align-items: center; justify-content: center; pointer-events: none;
+    background: color-mix(in srgb, var(--accent) 14%, transparent); border: 4px dashed var(--accent); }
+  #dropOv.show { display: flex; }
+  #dropOv b { padding: 16px 28px; border-radius: 12px; background: var(--panel); color: var(--accent); font-size: 1.3rem; box-shadow: 0 8px 28px rgba(0,0,0,.25); }
+
+  /* ===== 核對版面：整頁圖、表單、案件清冊一次看到，各自在框內捲動，不會牽動整個視窗 ===== */
+  main { max-width: 2600px; padding-left: 12px; padding-right: 12px; }
+  .work { grid-template-columns: minmax(0, 1fr) 430px minmax(0, 1.05fr); height: calc(100vh - 24px); min-height: 560px; align-items: stretch; }
+  .viewer { position: static; height: 100%; }
+  #panel { height: 100%; overflow: auto; padding-top: 0; }
+  #panel .nav { position: sticky; top: 0; z-index: 3; background: var(--panel); padding: 10px 0 8px; margin: 0 0 4px; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+  #panel .nav .pg { flex: 1 1 100%; order: -1; }
+  #panel .nav button { padding: 5px 9px; font-size: .85rem; }
+  #tblBox { height: 100%; display: flex; flex-direction: column; overflow: hidden; padding: 12px; }
+  #tblBox h2 { margin-bottom: 6px; }
+  #tblBox .tw { flex: 1; max-height: none; min-height: 0; }
+  #tblBox table { font-size: .78rem; }
+  #tblBox th, #tblBox td { padding: 3px 5px; }
+  #tblBox td:nth-child(2) { max-width: 110px; overflow: hidden; text-overflow: ellipsis; }
+  #tblBox .hint { margin: 4px 0 0; }
+  #tblBox .row { margin-top: 6px; }
+  @media (max-width: 1500px) {
+    .work { grid-template-columns: minmax(0, 1fr) 430px; grid-template-rows: minmax(0, 1fr) auto; }
+    #tblBox { grid-column: 1 / -1; height: auto; max-height: 60vh; }
+  }
+  @media (max-width: 900px) { .work { grid-template-columns: 1fr; height: auto; } .viewer { height: 60vh; } #panel { height: auto; overflow: visible; } }
+</style>
+<style>
+  #dupBox > summary { cursor: pointer; }
+  #dupBox .panel { min-width: 0; border: 1px solid var(--line); border-radius: 8px; padding: 12px; }
+  #dupBox .panel.over { border-color: var(--accent); background: var(--accent-soft); }
+  #dupBox textarea { width: 100%; min-height: 130px; margin-top: 8px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); color: var(--fg); font: .85rem/1.45 ui-monospace, Consolas, "Microsoft JhengHei", monospace; resize: vertical; white-space: pre; overflow: auto; }
+  #dupBox select { padding: 7px 9px; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); color: var(--fg); font: inherit; min-width: 0; width: 100%; }
+  #dupBox h3 { font-size: 1rem; margin: 0 0 4px; }
+  #dupBox .cfg { display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: flex-end; margin-top: 10px; }
+  #dupBox label.f { display: flex; flex-direction: column; gap: 4px; font-size: .85rem; color: var(--muted); flex: 1 1 200px; min-width: 0; }
+  #dupBox label.chk { display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: .9rem; }
+  #dupBox .opts { display: flex; flex-wrap: wrap; gap: 8px 22px; }
+  #dupBox .sum { padding: 10px 12px; border-radius: 8px; background: var(--accent-soft); }
+  #dupBox .sum.ok { background: #dcf5e8; color: #138a5a; }
+  #dupBox .sum.warn { background: #fff1c2; color: #7a5a00; }
+  :root[data-theme="dark"] #dupBox .sum.ok { background: #123a2a; color: #5fd3a0; }
+  :root[data-theme="dark"] #dupBox .sum.warn { background: #4a3a10; color: #f6d77a; }
+  #dupBox .res { margin-top: 16px; }
+  #dupBox .reshead { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+  #dupBox .reshead .btns { display: flex; flex-wrap: wrap; gap: 6px; }
+  #dupBox .tw { max-height: 420px; }
+  #dupBox table { border-collapse: collapse; width: 100%; font-size: .85rem; }
+  #dupBox th, #dupBox td { padding: 5px 9px; border-bottom: 1px solid var(--line); text-align: left; white-space: nowrap; }
+  #dupBox td.ln { color: var(--muted); text-align: right; }
+  #dupBox tr.dup td { background: #fff1c2; color: #7a5a00; }
+  :root[data-theme="dark"] #dupBox tr.dup td { background: #4a3a10; color: #f6d77a; }
+  #dupBox td.key { font-weight: 700; }
+  #dupBox .tag { display: inline-block; padding: 0 8px; border-radius: 999px; background: #e0b84a; color: #1a1405; font-size: .75rem; font-weight: 700; margin-right: 6px; }
+  #dupBox .mute { color: var(--muted); font-size: .78rem; }
+  #dcMsg { display: none; padding: 8px 12px; border-radius: 6px; background: var(--accent-soft); margin-top: 8px; }
+  #dcMsg.show { display: block; }
+  #dcMsg.err { background: #fdecec; color: #c62828; }
+  @media (max-width: 760px) { #dupBox .two { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<div id="dropOv" aria-hidden="true"><b>放開即可加入檔案</b></div>
+<div class="topbar"><a class="home" data-nav="index.html" href="index.html" title="回到工具箱首頁"><span class="hi" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor"><rect x="3" y="3" width="8" height="8" rx="2"/><rect x="13" y="3" width="8" height="8" rx="2"/><rect x="3" y="13" width="8" height="8" rx="2"/><rect x="13" y="13" width="8" height="8" rx="2"/></svg></span>工具箱首頁</a><button class="theme-btn" id="themeBtn" type="button" aria-label="切換深色或淺色主題" title="切換深色或淺色主題"><svg class="i-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg><svg class="i-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg><span class="lbl-dark">深色</span><span class="lbl-light">淺色</span></button></div>
+<main>
+  <div>
+    <h1>陳報單登記</h1>
+    <p class="sub">辨識強化版：支援左下／右下條碼定位，並對低信心案號進行補讀。</p>
+    <p class="sub">把掃描的陳報單、呈報單 PDF 放進來，自動讀出案號與收文資料，你只需核對手寫的部分，最後複製貼到 Excel 的登記表。預設全程在瀏覽器內處理，檔案不會上傳；只有勾選下方「AI 輔助」後，頁面圖片才會送到 Google Gemini 讀取。</p>
+  </div>
+
+  <section class="box">
+    <h2>1. 承辦人名單（已內建，通常不用動）</h2>
+    <div class="row" style="margin-top:0">
+      <button id="rosterFile" type="button">名單有異動時，從「已陳報」Excel 更新</button>
+      <button id="rosterReset" type="button">改回內建名單</button>
+      <span id="rosterInfo" class="hint" style="margin:0"></span>
+    </div>
+    <input id="rosterIn" type="file" accept=".xlsx,.xls" hidden>
+    <details id="rosterDet"><summary>讀不到時，改為貼上名單（一行一個名字）</summary>
+      <textarea id="rosterTxt" spellcheck="false" placeholder="涂石榕&#10;張佳穎&#10;…"></textarea>
+      <div class="row"><button id="rosterSave" type="button">使用這份名單</button></div>
+    </details>
+    <p class="hint">名單已預先放入工具，不用每次載入。有人員異動才需要更新。手寫的字只要打名字裡的任何一個字，就會列出名單裡符合的人。名字一律取自名單，不會重新打字。</p>
+  </section>
+
+  <section class="box" id="aiBox">
+    <h2>AI 輔助（選用，使用 Google Gemini）</h2>
+    <label class="chk" style="margin-top:0"><input type="checkbox" id="aiOn">啟用 AI 讀取：每一頁辨識完後，自動把整頁與裁切圖送給 Gemini，補讀手寫承辦人、便條紙、案類、案號、文號、日期</label>
+    <div id="aiOpts" hidden>
+      <div class="two">
+        <label class="f">Gemini API 金鑰（到 aistudio.google.com 申請，只存在這台電腦的瀏覽器）
+          <input id="aiKey" type="password" spellcheck="false" autocomplete="off" placeholder="貼上金鑰，或按下方「從文字檔載入金鑰」">
+        </label>
+        <label class="f">模型名稱
+          <input id="aiModel" type="text" spellcheck="false" list="aiModelList" placeholder="gemini-3.5-flash-lite">
+          <datalist id="aiModelList"><option value="gemini-3.5-flash-lite"><option value="gemini-3.8-flash"></datalist>
+        </label>
+      </div>
+      <div class="two">
+        <label class="f">備援模型（主模型額度用完或 Google 伺服器忙碌時改用，留空＝不備援；用備援模型讀的頁面會特別標示）
+          <input id="aiModel2" type="text" spellcheck="false" list="aiModelList" placeholder="gemini-3.8-flash">
+        </label>
+        <div style="display:flex;align-items:flex-end"><label class="chk"><input type="checkbox" id="aiZoom">承辦人第一次讀不出來時，自動把手寫處放大再讀一次（只有不確定的頁面會多用 1 次請求）</label></div>
+      </div>
+      <label class="chk"><input type="checkbox" id="aiSchema">使用 Gemini 的固定回傳格式（預設關閉；開啟後 JSON 格式更穩，但如果發現框出來的位置變不準，請維持關閉）</label>
+      <div class="two">
+        <label class="f">二次放大專用模型（只用在承辦人讀不出來的頁面；留空＝和主模型相同；該模型當天額度用完會自動改回主模型）
+          <input id="aiZoomModel" type="text" spellcheck="false" list="aiModelList" placeholder="gemini-3.8-flash">
+        </label>
+        <label class="f">備援／二次放大模型每分鐘最多幾次（看額度頁；3.8 Flash 免費是 5）
+          <input id="aiRpm2" type="text" inputmode="numeric" spellcheck="false" placeholder="5">
+        </label>
+      </div>
+      <div class="two">
+        <label class="f">每分鐘最多送幾頁（免費額度有限，被擋時會自動等待重試）
+          <input id="aiRpm" type="text" inputmode="numeric" spellcheck="false" placeholder="5">
+        </label>
+        <div style="display:flex;align-items:flex-end"><label class="chk"><input type="checkbox" id="aiOnly">只用 AI，略過本機英數辨識（較快，不用下載辨識引擎）</label></div>
+      </div>
+      <div class="row">
+        <button id="aiLoadKey" type="button">從文字檔載入金鑰</button>
+        <input id="aiKeyFile" type="file" accept=".txt,text/plain" hidden>
+        <button id="aiTest" type="button">測試連線</button>
+        <button id="aiAll" type="button">用 AI 讀取所有尚未讀取的頁面</button>
+        <button id="aiStop" type="button" hidden>停止 AI</button>
+        <button id="aiClear" type="button">清除已存的金鑰</button>
+        <button id="aiFixClear" type="button">清除已記住的更正</button>
+      </div>
+      <p class="hint" id="aiInfo"></p>
+      <div class="box" id="aiUseBox" style="margin-top:10px;padding:10px 12px">
+        <strong style="font-size:.9rem">API 用量（只記錄這個瀏覽器送出的請求）</strong>
+        <div id="aiUse" style="margin-top:4px"></div>
+        <div id="aiEst" class="hint"></div>
+        <details><summary>最近 7 天</summary><div id="aiHist" class="hint" style="white-space:pre-line"></div></details>
+        <div class="row" style="margin-top:8px">
+          <label class="f" style="margin:0;flex-direction:row;align-items:center;gap:8px">每日請求上限（選填；到 AI Studio 的「Rate limit」頁查這個模型的每日請求數）<input id="aiRpd" type="text" inputmode="numeric" spellcheck="false" style="width:90px" placeholder="例如 1000"></label>
+          <button id="aiUseClear" type="button">清除用量紀錄</button>
+          <a class="lnkbtn" href="https://aistudio.google.com/rate-limit?timeRange=last-28-days&amp;project=gen-lang-client-0555782270" target="_blank" rel="noopener noreferrer">開啟 Google 的額度頁（Rate limit）↗</a>
+        </div>
+        <p class="hint">用量是每次 Google 回傳的 token 數累加起來的，以太平洋時間的日期歸檔（和免費額度的重置時間一致）。同一把金鑰如果在別台電腦或別的程式也有使用，這裡看不到，實際剩餘請以 AI Studio 的 Usage 頁面為準。</p>
+      </div>
+    </div>
+    <p class="hint">AI 讀到的內容只會填在沒有被你手動改過的欄位，並標成 ⚠ 請你核對；承辦人一律對照名單，名單裡找不到的不會填。你手動更正承辦人後，按「複製」或下載時會記住「AI 讀到的字 → 正確名字」，下次遇到同樣的字就直接套用（單字也會記；只存在這台電腦的瀏覽器）。</p>
+  </section>
+
+  <section class="box">
+    <h2>2. 加入 PDF</h2>
+    <div id="drop" tabindex="0" role="button" aria-label="選擇或拖曳 PDF">
+      <strong>把掃描的 PDF 拖到這個頁面的任何地方</strong>
+      <span>放開就會自動加入；可一次放多個檔案，也可以點這裡選擇檔案。</span>
+    </div>
+    <input id="pdfIn" type="file" accept="application/pdf,.pdf" multiple hidden>
+    <div class="row">
+      <span id="fileInfo" class="hint" style="margin:0"></span>
+      <button id="stopOcr" type="button" hidden>停止辨識</button>
+    </div>
+    <div class="bar" id="progBar" hidden><i id="prog"></i></div>
+    <p class="hint" id="progTxt"></p>
+    <div id="msg" role="status"></div>
+  </section>
+
+  <section class="work" id="work" hidden>
+    <div class="viewer" id="viewer"><img id="pageImg" alt="目前頁面（點一下放大）"></div>
+    <div class="box" id="panel">
+      <div class="nav">
+        <button id="prev" type="button">◀ 上一頁</button>
+        <div class="pg"><span id="pgNo"></span><div class="st" id="pgSt"></div></div>
+        <button id="next" type="button">下一頁 ▶</button>
+        <button id="nextWarn" type="button" title="跳到下一個需要核對（⚠）的頁面">下一個 ⚠</button>
+        <button id="okBtn" type="button" title="這頁確認沒問題，取消 ⚠（快速鍵 Ctrl+Enter：取消並到下一頁）">✓ 這頁無誤</button>
+        <button id="aiPage" type="button" title="把這一頁送給 Gemini 重新讀取" hidden>AI 讀此頁</button>
+      </div>
+
+      <div class="radios">
+        <label><input type="radio" name="type" value="occ">發生卷（陳報單）</label>
+        <label><input type="radio" name="type" value="cap">破獲卷（呈報單，有嫌疑人）</label>
+        <label><input type="radio" name="type" value="xfer">移轉（承辦人欄填轉往的分局）</label>
+      </div>
+
+      <div class="field" id="fCode">
+        <div class="lb"><span id="codeLb">E化案號</span><span id="codeStn"></span></div>
+        <img class="crop" id="codeImg" alt="" hidden>
+        <input id="code" type="text" spellcheck="false" autocomplete="off">
+        <div class="note" id="codeNote"></div>
+      </div>
+
+      <div class="field" id="fWho">
+        <div class="lb"><span>承辦人（右邊緣手寫的字）</span></div>
+        <img class="strip" id="stripImg" alt="" hidden>
+        <div class="hint" id="stripHint" hidden></div>
+        <input id="who" type="text" spellcheck="false" autocomplete="off" placeholder="輸入名字裡的一個字，按 Enter 選取；再按 Enter 到下一頁">
+        <div class="chips" id="whoChips"></div><datalist id="destList"><option value="中和"><option value="板橋"><option value="新莊"><option value="三峽"><option value="樹林"><option value="永和"></datalist>
+        <div class="note" id="whoNote"></div>
+        <div class="row" id="hintRow" style="margin-top:6px" hidden>
+          <input id="whoHint" type="text" spellcheck="false" autocomplete="off" maxlength="20" placeholder="我看這個字是…（例如：永）" style="flex:1 1 160px;width:auto">
+          <button id="whoHintBtn" type="button" title="把你看出來的字告訴 AI，只重讀這一頁">告訴 AI 並重讀此頁</button>
+        </div>
+      </div>
+
+      <div class="two">
+        <div class="field"><div class="lb"><span>發生案號（自己填）</span></div><input id="occNo" type="text" spellcheck="false" autocomplete="off"></div>
+        <div class="field"><div class="lb"><span>發生文號（自己填）</span></div><input id="caseNo" type="text" spellcheck="false" autocomplete="off"></div>
+      </div>
+      <div class="field" id="fDate">
+        <div class="lb"><span>收文日期（貼紙上的日期，西元）</span></div>
+        <img class="crop" id="dateImg" alt="" hidden>
+        <input id="date" type="text" spellcheck="false" autocomplete="off" placeholder="2026/11/17">
+        <div class="note" id="dateNote"></div>
+      </div>
+
+      <div class="grp">
+        <div class="field">
+          <label class="chk"><input type="checkbox" id="sticky">有便條紙或移轉他轄</label>
+        </div>
+        <div id="stickyBox" hidden>
+          <img class="crop" id="stickyImg" alt="" hidden style="max-height:140px">
+          <div class="field"><div class="lb"><span>實際承辦人（便條紙上的名字）</span></div>
+            <input id="realWho" type="text" spellcheck="false" autocomplete="off" placeholder="輸入名字裡的一個字">
+            <div class="chips" id="realChips"></div>
+          </div>
+        </div>
+        <p class="hint" id="realHint"></p>
+      </div>
+
+      <div class="grp" id="capBox" hidden>
+        <div class="field" id="fCat"><div class="lb"><span>案類（單子上的「觸犯法條」）</span><button id="catOcr" type="button" style="padding:2px 10px">自動讀取案類</button></div>
+          <input id="cat" type="text" spellcheck="false" autocomplete="off" list="catList"><datalist id="catList"></datalist>
+          <div class="note" id="catNote"></div></div>
+        <div class="field" id="fDoc">
+          <div class="lb"><span>文號（收文條碼下方的數字）</span></div>
+          <img class="crop" id="docImg" alt="" hidden>
+          <input id="docNo" type="text" spellcheck="false" autocomplete="off">
+          <div class="note" id="docNote"></div>
+        </div>
+      </div>
+
+      <div class="grp row">
+        <label class="chk"><input type="checkbox" id="skip">略過此頁（不匯出）</label>
+      </div>
+      <p class="hint">快捷鍵：Ctrl + Enter＝這頁無誤並到下一頁；Alt + ← / → 切換頁面。在「承辦人」按 Enter 選取後，再按一次 Enter 會跳到下一頁。</p>
+
+      <details class="grp" id="aiTxtBox" hidden>
+        <summary>AI 整頁文字與錯字檢查（需要時才按，一次用掉一次 AI 額度）</summary>
+        <div class="row"><button id="aiTxtBtn" type="button">讀取這一頁的文字並檢查錯字</button><button id="aiTxtCopy" type="button" hidden>複製文字</button></div>
+        <div class="note" id="aiTxtNote" style="font-size:.8rem;color:var(--muted);margin-top:4px"></div>
+        <textarea id="aiTxt" readonly spellcheck="false" hidden style="margin-top:8px;min-height:180px"></textarea>
+        <ul id="aiTxtIssues" style="margin:8px 0 0;padding-left:1.2em;font-size:.85rem"></ul>
+      </details>
+    </div>
+  <aside class="box" id="tblBox">
+    <h2>3. 檢查與匯出</h2>
+    <div class="tw"><table id="tbl"><thead><tr>
+      <th>#</th><th>來源</th><th>類型</th><th>承辦人</th><th>E化案號</th><th>發生案號</th><th>發生文號</th><th>實際承辦人</th><th>案類</th><th>文號</th><th>收文日期</th>
+    </tr></thead><tbody></tbody></table></div>
+    <p class="hint" id="tblHint"></p>
+    <div class="row">
+      <button id="copyBtn" class="primary" type="button">複製（貼到 Excel）</button>
+      <button id="xlsxBtn" type="button">下載 Excel</button>
+      <button id="csvBtn" type="button">下載 CSV</button>
+    </div>
+    <p class="hint">複製的欄位順序和你的登記表一致：承辦人、E化案號、發生案號、發生文號、實際承辦人、案類、文號、收文日期。直接貼到登記表第一個空白列的 A 欄，公式不會被蓋掉。</p>
+  </aside>
+  </section>
+
+  <details class="box" id="dupBox">
+    <summary><h2 style="display:inline">4. 重複比對（和其他表格比對案號）</h2></summary>
+    <p class="hint">把別的網頁或 Excel 的表格貼進 B 表，就會和上面登記的資料比對案號，兩邊都有的標成黃色。資料只在瀏覽器內處理。</p>
+    <div class="two" id="dcPanels" style="margin-top:10px"></div>
+    <div class="opts" style="margin-top:12px">
+      <label class="chk"><input type="checkbox" id="oSpace" checked>忽略空白與英文大小寫</label>
+      <label class="chk"><input type="checkbox" id="oWidth" checked>全形、半形視為相同</label>
+      <label class="chk"><input type="checkbox" id="oSym">忽略橫線、底線、句點等符號</label>
+    </div>
+    <div class="sum" id="sum" style="margin-top:12px">請先貼上要比對的表格。</div>
+    <div class="row" style="margin:0 0 4px"><label class="chk"><input type="checkbox" id="only">只顯示重複的列</label></div>
+    <div id="dcMsg" role="status"></div>
+    <div id="resA" class="res"></div>
+    <div id="resB" class="res"></div>
+  </details>
+
+</main>
+
+<script>
+(function () {
+  "use strict";
+  const $ = (s) => document.querySelector(s);
+  const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  const KEY_R = "pdf-register-roster2", KEY_C = "pdf-register-cats";
+  const STN = { O1: "土城", P1: "廣福", Q1: "清水", M1: "金城", R1: "頂埔", "91": "交通分隊" };
+  const msg = $("#msg");
+  let listCodes = null;   /* 重複比對區貼上的案件列表：{ has(code), n }；只用來提醒，不會改案號 */
+  const notInList = (code) => !!(listCodes && code && !listCodes.has(code));
+  function show(t, k) { msg.textContent = t; msg.className = "show" + (k ? " " + k : ""); }
+  function hide() { msg.className = ""; }
+  function tick() { return new Promise((r) => setTimeout(r, 0)); }
+  function lsGet(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+  function lsSet(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
+
+  if (!window.pdfjsLib) { show("無法載入 PDF 處理元件，請確認網路連線後重新整理頁面。", "err"); return; }
+  pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+
+  /* ================= 純函式：案號、日期、文號 ================= */
+  const DMAP = { O: "0", Q: "0", D: "0", I: "1", L: "1", A: "1", S: "5", B: "8", Z: "2", G: "6", T: "7" };
+  const toDigit = (c) => (/\d/.test(c) ? c : DMAP[c] || c);
+  /* 規則：Z + 年(3) + 月(2) + 9 + AD1 + 派出所代號(O/P/Q/M/R + 1) + 末三碼（不會有 O） */
+  function fixCode(raw) {
+    const s = String(raw).toUpperCase().replace(/[^A-Z0-9]/g, "");
+    let best = null;
+    for (let i = 0; i + 15 <= s.length; i++) {
+      if (s[i] !== "Z") continue;
+      const t = s.slice(i, i + 15), fl = [];
+      let o = "Z";
+      for (let p = 1; p <= 5; p++) o += toDigit(t[p]);
+      if (t[6] !== "9") fl.push("第 7 碼不是 9");
+      o += "9";
+      if (t[7] !== "A" || t[8] !== "D") fl.push("AD 讀得不確定");
+      o += "AD";
+      if (!/[1IL]/.test(t[9])) fl.push("分局代號第 3 碼不是 1");
+      o += "1";
+      let st = t[10] === "0" ? "O" : t[10];
+      if (!/[OPQMR9]/.test(st)) fl.push("派出所代號不在 O/P/Q/M/R/91");
+      o += st;
+      if (!/[1IL]/.test(t[11])) fl.push("派出所代號第 2 碼不是 1");
+      o += "1";
+      let tail = "";
+      for (const c0 of t.slice(12)) {
+        let c = c0 === "O" ? "0" : c0;
+        if (/[1IL]/.test(c)) fl.push("末三碼的 I / 1 / L 要確認");
+        tail += c;
+      }
+      o += tail;
+      const yy = +o.slice(1, 4), mm = +o.slice(4, 6);
+      if (yy < 100 || yy > 140 || mm < 1 || mm > 12) fl.push("年月看起來不對");
+      const sc = fl.length, stSoft = /[O9]/.test(st) ? "派出所代號 O 和 9（91＝交通分隊）容易混淆，請核對。 " : "", soft = stSoft + (/[6GSB5Z2D0Q8]/.test(tail) ? "末三碼含容易混淆的字（6/G、5/S、8/B、2/Z、0/D），請對照圖片確認" : "");
+      if (!best || sc < best.sc) best = { sc, code: o, flags: Array.from(new Set(fl)), soft };
+    }
+    return best;
+  }
+  /* 收文日期：允許民國今年前兩年到明年，並檢查實際月日，避免跨年度後全部誤判 */
+  function parseDate(s) {
+    const m = String(s).match(/(1[0-4]\d)\D{0,3}(\d{1,2})\D{0,3}(\d{1,2})/);
+    if (!m) return "";
+    const cy = new Date().getFullYear() - 1911;
+    const roc = +m[1], mo = +m[2], d = +m[3], y = roc + 1911;
+    if (roc < cy - 2 || roc > cy + 1 || mo < 1 || mo > 12) return "";
+    const lastDay = new Date(y, mo, 0).getDate();
+    if (d < 1 || d > lastDay) return "";
+    return y + "/" + String(mo).padStart(2, "0") + "/" + String(d).padStart(2, "0");
+  }
+  const normDate = (s) => {
+    const m = String(s).trim().match(/^(\d{4})\D(\d{1,2})\D(\d{1,2})$/);
+    if (!m) return "";
+    const y = +m[1], mo = +m[2], d = +m[3];
+    if (mo < 1 || mo > 12 || d < 1 || d > new Date(y, mo, 0).getDate()) return "";
+    return y + "/" + String(mo).padStart(2, "0") + "/" + String(d).padStart(2, "0");
+  };
+  /* 檔名裡的日期，例如「1151118公文.pdf」→ 2026/11/18 */
+  function fileDate(name) {
+    const m = String(name).match(/(1[0-4]\d)(0[1-9]|1[0-2])(0[1-9]|[12]\d|3[01])/);
+    if (!m) return "";
+    const y = +m[1] + 1911, mo = +m[2], d = +m[3];
+    return d <= new Date(y, mo, 0).getDate() ? y + "/" + m[2] + "/" + m[3] : "";
+  }
+  /* 從「觸犯法條」那一列讀出案類；讀不到就找內文的「依○○罪」 */
+  function parseCat(text) {
+    const clean = (v) => String(v).replace(/[^\u4e00-\u9fff、，,]/g, "").replace(/[，,]/g, "、").replace(/^、+|、+$/g, "");
+    const lines = String(text).split(/\n/).map((l) => l.replace(/\s+/g, ""));
+    for (const l of lines) {
+      const m = l.match(/觸犯?法條[|｜:：]*(.*)$/) || l.match(/犯法條[|｜:：]*(.*)$/);
+      if (m) { const v = clean(m[1]); if (v.length >= 2) return v; }
+    }
+    const m2 = lines.join("").match(/依([\u4e00-\u9fff、]{2,24}?)罪/);
+    return m2 ? clean(m2[1]) : "";
+  }
+  /* 文號為民國三碼年 + 七碼流水號；不把年份寫死為 115 */
+  function parseDoc(s) { const m = String(s).replace(/\D/g, "").match(/11\d{8}/); return m ? m[0] : ""; }
+
+  /* ================= 圖像處理 ================= */
+  function cropC(c, x0, y0, x1, y1, scale) {
+    const w = c.width, h = c.height, sx = Math.floor(w * x0), sy = Math.floor(h * y0), sw = Math.max(1, Math.ceil(w * (x1 - x0))), sh = Math.max(1, Math.ceil(h * (y1 - y0)));
+    return cropPx(c, sx, sy, sw, sh, scale || 1);
+  }
+  function cropPx(c, x, y, w, h, scale) {
+    x = Math.max(0, Math.floor(x)); y = Math.max(0, Math.floor(y)); w = Math.max(1, Math.min(c.width - x, Math.ceil(w))); h = Math.max(1, Math.min(c.height - y, Math.ceil(h)));
+    const o = document.createElement("canvas"); o.width = Math.max(1, Math.round(w * (scale || 1))); o.height = Math.max(1, Math.round(h * (scale || 1)));
+    const g = o.getContext("2d", { willReadFrequently: true }); g.imageSmoothingQuality = "high"; g.fillStyle = "#fff"; g.fillRect(0, 0, o.width, o.height);
+    g.drawImage(c, x, y, w, h, 0, 0, o.width, o.height); return o;
+  }
+  function runs(arr, thr, gap) {
+    const out = []; let s = -1, last = -1;
+    for (let i = 0; i < arr.length; i++) {
+      if (arr[i] > thr) { if (s < 0) s = i; last = i; }
+      else if (s >= 0 && i - last > gap) { out.push([s, last]); s = -1; }
+    }
+    if (s >= 0) out.push([s, last]);
+    return out;
+  }
+  /* 條碼位置會因表單版型落在左下或右下；雙側掃描並用條碼列密度選出位置 */
+  /* 條碼若跨出搜尋範圍（掃描位置偏移），沿著條碼那一排把左右邊界延伸到條碼真正的邊緣。只會加寬、不會縮小 */
+  function barGroup(col, bh, x0, x1) {   /* 找出和搜尋範圍重疊、直條最多的那一組，就是條碼本體的左右邊界 */
+    const w = col.length, gt = Math.max(8, Math.round(0.008 * w)), groups = [];
+    let s = -1, last = -1, cnt = 0;
+    for (let x = 0; x < w; x++) {
+      if (col[x] >= 0.5 * bh) {
+        if (s >= 0 && x - last > gt) { groups.push({ s, e: last, cnt }); s = -1; cnt = 0; }
+        if (s < 0) s = x; last = x; cnt++;
+      }
+    }
+    if (s >= 0) groups.push({ s, e: last, cnt });
+    let g = null;
+    for (const q of groups) if (q.e >= x0 && q.s <= x1 && (!g || q.cnt > g.cnt)) g = q;
+    return g && g.cnt >= 20 ? g : null;
+  }
+  function widenBar(col, bh, x0, x1) {
+    const w = col.length, pad = Math.round(0.01 * w), g = barGroup(col, bh, x0, x1);
+    if (!g) return [x0, x1];
+    return [Math.max(Math.max(0, x0 - Math.round(0.15 * w)), Math.min(x0, g.s - pad)), Math.min(Math.min(w, x1 + Math.round(0.10 * w)), Math.max(x1, g.e + pad))];
+  }
+  /* 裁切圖裡「真的有字」的比例（不算整條的黑邊、表格線）；太低代表裁到空白處 */
+  function inkRatio(cv) {
+    try {
+      const w = cv.width, h = cv.height, d = cv.getContext("2d").getImageData(0, 0, w, h).data, colN = new Int32Array(w), rowN = new Int32Array(h);
+      const dark = (i) => d[i] * 0.299 + d[i + 1] * 0.587 + d[i + 2] * 0.114 < 140;
+      for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) if (dark((y * w + x) * 4)) { colN[x]++; rowN[y]++; }
+      let n = 0;
+      for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) if (dark((y * w + x) * 4) && colN[x] <= 0.6 * h && rowN[y] <= 0.6 * w) n++;
+      return n / Math.max(1, w * h);
+    } catch (e) { return 1; }
+  }
+  function analyzeBottom(c) {
+    const w = c.width, h = c.height, y0 = Math.floor(h * 0.62), rh = h - y0;
+    if (w < 100 || rh < 60) return null;
+    const ranges = [[0.18, 0.62], [0.38, 0.98]];
+    let best = null;
+    for (const range of ranges) {
+      const x0 = Math.floor(w * range[0]), x1 = Math.floor(w * range[1]), rw0 = x1 - x0;
+      if (rw0 < 50) continue;
+      const data = c.getContext("2d").getImageData(x0, y0, rw0, rh).data;
+      const rows = new Int32Array(rh), colN = new Int32Array(rw0);
+      const isDark = (i) => data[i] * 0.299 + data[i + 1] * 0.587 + data[i + 2] * 0.114 < 150;
+      for (let y = 0; y < rh; y++) for (let x = 0; x < rw0; x++) if (isDark((y * rw0 + x) * 4)) colN[x]++;
+      /* 排除掃描邊緣、裝訂線等整段黑邊 */
+      const skip = Array.from(colN, (n) => n > 0.60 * rh);
+      const active = skip.reduce((n, v) => n + (v ? 0 : 1), 0);
+      if (active < 40) continue;
+      for (let y = 0; y < rh; y++) {
+        let n = 0;
+        for (let x = 0; x < rw0; x++) if (!skip[x] && isDark((y * rw0 + x) * 4)) n++;
+        rows[y] = n;
+      }
+      /* 左側條碼在整個搜尋區中通常只佔約 15%～20%，30% 門檻會漏掉 */
+      const bars = runs(Array.from(rows, (v) => (v > 0.12 * active ? 1 : 0)), 0, 3)
+        .filter((r) => r[1] - r[0] > h * 0.012 && r[1] - r[0] < h * 0.075);
+      for (const br of bars) {
+        let density = 0;
+        for (let y = br[0]; y <= br[1]; y++) density += rows[y] / active;
+        density /= (br[1] - br[0] + 1);
+        const score = (br[1] - br[0] + 1) * density;
+        if (!best || score > best.score) best = { score, x0, rw: rw0, y0, rows, active, br };
+      }
+    }
+    if (!best) return null;
+    const { x0, rows, active, br } = best;
+    let ex0 = x0, erw = best.rw, barG = null;
+    try {
+      const bh = br[1] - br[0] + 1, dd = c.getContext("2d").getImageData(0, best.y0 + br[0], c.width, bh).data, col = new Int32Array(c.width);
+      for (let y = 0; y < bh; y++) for (let x = 0; x < c.width; x++) { const i = (y * c.width + x) * 4; if (dd[i] * 0.299 + dd[i + 1] * 0.587 + dd[i + 2] * 0.114 < 150) col[x]++; }
+      const wd = widenBar(col, bh, x0, x0 + best.rw); ex0 = wd[0]; erw = wd[1] - wd[0]; barG = barGroup(col, bh, x0, x0 + best.rw);
+    } catch (e) {}
+    const unit = h / 3508;
+    const textThr = Math.max(2, Math.floor(0.012 * active));
+    const above = runs(Array.from(rows.slice(0, br[0])), textThr, 4)
+      .filter((r) => r[1] - r[0] >= Math.max(5, h * 0.003));
+    const below = runs(Array.from(rows.slice(br[1] + 1)), textThr, 4)
+      .map((r) => [r[0] + br[1] + 1, r[1] + br[1] + 1])
+      .filter((r) => r[1] - r[0] >= Math.max(5, h * 0.003));
+    const res = {};
+    if (above.length) {
+      const r = above[above.length - 1];
+      const top = Math.max(r[0], r[1] - Math.round(70 * unit));
+      res.date = [ex0, best.y0 + top - 4, erw, Math.max(1, r[1] - top + 12)];
+    } else {
+      const top = Math.max(0, br[0] - Math.round(78 * unit));
+      res.date = [ex0, best.y0 + top, erw, Math.max(1, br[0] - top - 2)];
+    }
+    if (below.length) {
+      const r = below[0];
+      res.num = [ex0, best.y0 + Math.max(br[1] + 1, r[0] - 3), erw,
+        Math.max(1, r[1] - r[0] + 12)];
+    } else {
+      /* 數字列很淡時投影可能抓不到，仍提供條碼下方區塊讓 OCR 嘗試 */
+      const top = best.y0 + br[1] + 2;
+      res.num = [ex0, top, erw, Math.max(1, Math.min(Math.round(85 * unit), h - top))];
+    }
+    if (barG) { const yt = res.date[1], yb = res.num[1] + res.num[3], pd = Math.round(0.01 * c.width); res.sticker = [Math.max(0, barG.s - pd), yt, barG.e - barG.s + 1 + 2 * pd, Math.max(1, yb - yt)]; }   /* 收文貼紙（日期＋條碼＋數字）的範圍 */
+    return res;
+  }
+  /* 便條紙（黃橙色）偵測 */
+  function findSticky(c) {
+    const sw = 400, sh = Math.round(c.height * sw / c.width), s = document.createElement("canvas"); s.width = sw; s.height = sh;
+    const g = s.getContext("2d", { willReadFrequently: true }); g.drawImage(c, 0, 0, sw, sh);
+    const d = g.getImageData(0, 0, sw, sh).data, B = 8, bw = Math.floor(sw / B), bh = Math.floor(sh / B), cnt = new Int32Array(bw * bh);
+    for (let y = 0; y < bh * B; y++) for (let x = 0; x < bw * B; x++) {
+      const i = (y * sw + x) * 4, r = d[i], gg = d[i + 1], b = d[i + 2];
+      if (r > 215 && gg > 165 && gg < 235 && b < 175 && r - b > 60) cnt[Math.floor(y / B) * bw + Math.floor(x / B)]++;
+    }
+    let x0 = 1e9, y0 = 1e9, x1 = -1, y1 = -1, n = 0;
+    for (let by = 0; by < bh; by++) for (let bx = 0; bx < bw; bx++) if (cnt[by * bw + bx] > B * B * 0.5) { n++; x0 = Math.min(x0, bx); y0 = Math.min(y0, by); x1 = Math.max(x1, bx); y1 = Math.max(y1, by); }
+    if (n < 12) return null;
+    const k = c.width / sw;
+    return [x0 * B * k, y0 * B * k, (x1 - x0 + 1) * B * k, (y1 - y0 + 1) * B * k];
+  }
+  const url = (c, q) => c.toDataURL("image/jpeg", q || 0.85);
+
+  /* ================= 名單 ================= */
+  /* 內建名單：取自「已陳報」Excel 的未結件數統計（承辦人欄，23 人），名字為原字串 */
+  const BUILTIN = ["涂石榕", "張佳穎", "黃富群", "孫利生", "吳柏翰", "陳致憲", "王昱侑", "朱晋廷", "林德愷", "高玉庭", "鄭耘", "林文華", "黃昭貴", "陳柏豪", "吳柏霆", "姚柏翔", "翁嘉偉", "林奕丞", "李原豪", "李堃晢", "林冠宇", "張淵普", "周渝宸"];
+  let roster = [];
+  function setRoster(list, from) {
+    roster = Array.from(new Set(list.map((s) => String(s).trim()).filter(Boolean)));
+    lsSet(KEY_R, JSON.stringify({ list: roster, from: from || "" }));
+    $("#rosterInfo").textContent = roster.length ? "已載入 " + roster.length + " 人" + (from ? "（" + from + "）" : "") : "尚未載入名單";
+    $("#rosterTxt").value = roster.join("\n");
+    refreshWho();
+  }
+  function loadScript(src) { return new Promise((ok, no) => { const s = document.createElement("script"); s.src = src; s.onload = ok; s.onerror = () => no(new Error("載入失敗：" + src)); document.head.appendChild(s); }); }
+  async function readRosterFile(f) {
+    try {
+      if (!window.XLSX) await loadScript("https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js");
+      const wb = XLSX.read(await f.arrayBuffer(), { type: "array" });
+      let best = [];
+      for (const sn of wb.SheetNames) {
+        const ws = wb.Sheets[sn]; if (!ws["!ref"]) continue;
+        const rg = XLSX.utils.decode_range(ws["!ref"]);
+        for (let r = rg.s.r; r <= rg.e.r; r++) for (let c = rg.s.c; c <= rg.e.c; c++) {
+          const cell = ws[XLSX.utils.encode_cell({ r, c })];
+          if (!cell || String(cell.v).trim() !== "承辦人") continue;
+          const names = []; let blank = 0;
+          for (let rr = r + 1; rr <= Math.min(rg.e.r, r + 80); rr++) {
+            const x = ws[XLSX.utils.encode_cell({ r: rr, c })], v = x && x.v != null ? String(x.v).trim() : "";
+            if (!v) { if (++blank >= 2) break; continue; }
+            blank = 0;
+            if (/^[㐀-鿿]{2,4}$/.test(v) && !["總數", "小隊", "承辦人"].includes(v)) names.push(v);
+          }
+          if (names.length > best.length || (names.length === best.length && /未結/.test(sn))) best = names;
+        }
+      }
+      if (best.length < 3) throw new Error("找不到「承辦人」欄的名單");
+      setRoster(best, f.name); hide();
+    } catch (e) {
+      $("#rosterDet").open = true;
+      show("讀不到名單（" + (e && e.message ? e.message : e) + "）。如果檔案有加密，請在下方貼上名單。", "warn");
+    }
+  }
+  $("#rosterFile").addEventListener("click", () => $("#rosterIn").click());
+  $("#rosterIn").addEventListener("change", function () { const f = this.files[0]; this.value = ""; if (f) readRosterFile(f); });
+  $("#rosterSave").addEventListener("click", () => { const l = $("#rosterTxt").value.split(/[\n,，、\s]+/); setRoster(l, "手動貼上"); hide(); });
+
+  /* ================= 頁面資料 ================= */
+  let docs = [], pages = [], cur = -1, ocrStop = false, ocrRunning = false, worker = null;
+  const mkRec = (fi, n, name) => ({
+    fi, n, src: name + " 第 " + n + " 頁", status: "wait", err: "", img: "", strip: "", stickyImg: "", numImg: "", dateImg: "", codeImg: "",
+    nameDate: fileDate(name), ocrDate: "", catFlag: "", occNo: "",
+    type: "occ", occNo: "", code: "", codeFlags: [], codeSoft: "", who: "", sticky: false, caseNo: "", realWho: "", cat: "", docNo: "", docFlag: "", date: "", dateFlag: "",
+    skip: false, touched: {},
+    aiDone: false, aiFlag: "", aiFilled: {}, aiMiss: "", aiMissS: "", aiErr: "", aiText: null
+  });
+  const cands = (q) => { q = String(q).trim(); if (!q) return []; return roster.filter((n) => Array.from(q).every((ch) => n.includes(ch))); };
+
+  /* 名單初始化（需在 pages 宣告之後） */
+  $("#rosterReset").addEventListener("click", () => { setRoster(BUILTIN, "內建"); hide(); });
+  try {
+    const r = JSON.parse(lsGet(KEY_R) || "null");
+    if (r && r.list && r.list.length && r.from && r.from !== "內建") setRoster(r.list, r.from + "，上次使用"); else setRoster(BUILTIN, "內建");
+  } catch (e) { setRoster(BUILTIN, "內建"); }
+
+
+  /* ---------- 辨識 ---------- */
+  async function ensureOcr() {
+    if (worker) return worker;
+    if (!window.Tesseract) await loadScript("https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js");
+    $("#progTxt").textContent = "正在下載辨識引擎與英數字資料（第一次使用需要一點時間）…";
+    worker = await Tesseract.createWorker("eng", 1, { logger: (m) => { if (m.status && /loading|initializ/.test(m.status)) $("#progTxt").textContent = "準備辨識引擎… " + Math.round((m.progress || 0) * 100) + "%"; } });
+    return worker;
+  }
+  async function recog(canvas, wl, psm, blocks) {
+    await worker.setParameters({ tessedit_char_whitelist: wl, tessedit_pageseg_mode: String(psm) });
+    const r = await worker.recognize(canvas, {}, blocks ? { text: true, blocks: true } : { text: true });
+    return r.data;
+  }
+  function linesOf(d) {
+    if (d.lines && d.lines.length) return d.lines;
+    const out = [];
+    (d.blocks || []).forEach((b) => (b.paragraphs || []).forEach((p) => (p.lines || []).forEach((l) => out.push(l))));
+    return out;
+  }
+  const ALNUM = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+  /* 載入時就把整頁掃描圖變清晰：紙張底色拉成純白、文字加深（各色同比例，不改色相）。
+     之後畫面上的整頁圖、各個放大圖與辨識都用這張清晰版。 */
+  function cleanPage(cv) {
+    const w = cv.width, hh = cv.height, g = cv.getContext("2d", { willReadFrequently: true });
+    const im = g.getImageData(0, 0, w, hh), d = im.data, n = w * hh, hist = new Uint32Array(256);
+    for (let i = 0; i < n; i++) hist[(d[i * 4] * 77 + d[i * 4 + 1] * 150 + d[i * 4 + 2] * 29) >> 8]++;
+    let acc = 0, lo = 0, hi = 255;
+    for (let v = 0; v < 256; v++) { acc += hist[v]; if (acc >= n * 0.004) { lo = v; break; } }
+    acc = 0; for (let v = 0; v < 256; v++) { acc += hist[v]; if (acc >= n * 0.6) { hi = v; break; } }
+    hi = Math.max(hi - 8, lo + 60);
+    const lut = new Uint8Array(256);
+    for (let v = 0; v < 256; v++) { const x = Math.max(0, Math.min(1, (v - lo) / (hi - lo))); lut[v] = Math.round(255 * Math.pow(x, 1.25)); }
+    for (let i = 0; i < n; i++) { d[i * 4] = lut[d[i * 4]]; d[i * 4 + 1] = lut[d[i * 4 + 1]]; d[i * 4 + 2] = lut[d[i * 4 + 2]]; }
+    g.putImageData(im, 0, 0);
+    return cv;
+  }
+  /* 增強：只取紅色通道（紅色印章會消失）、拉開對比，必要時二值化 */
+  function enhance(c, mode) {
+    const w = c.width, hh = c.height, o = document.createElement("canvas"); o.width = w; o.height = hh;
+    const g = o.getContext("2d", { willReadFrequently: true }); g.drawImage(c, 0, 0);
+    const im = g.getImageData(0, 0, w, hh), d = im.data, n = w * hh, hist = new Uint32Array(256);
+    for (let i = 0; i < n; i++) hist[d[i * 4]]++;
+    let acc = 0, lo = 0, hi = 255;
+    for (let v = 0; v < 256; v++) { acc += hist[v]; if (acc >= n * 0.02) { lo = v; break; } }
+    acc = 0; for (let v = 0; v < 256; v++) { acc += hist[v]; if (acc >= n * 0.98) { hi = v; break; } }
+    const span = Math.max(30, hi - lo);
+    for (let i = 0; i < n; i++) {
+      let v = Math.max(0, Math.min(255, ((d[i * 4] - lo) / span) * 255));
+      if (mode === "bin") v = v > 150 ? 255 : 0;
+      d[i * 4] = d[i * 4 + 1] = d[i * 4 + 2] = v; d[i * 4 + 3] = 255;
+    }
+    g.putImageData(im, 0, 0);
+    return o;
+  }
+  /* 多種處理結果逐位投票；不一致的位置會提醒核對 */
+  function voteCodes(list) {
+    const rs = list.filter(Boolean); if (!rs.length) return null;
+    const base = rs.reduce((a, b) => (b.sc < a.sc ? b : a));
+    if (rs.length < 2) return base;
+    let o = "", diff = [];
+    for (let p = 0; p < 15; p++) {
+      const cnt = {}; rs.forEach((r) => { const ch = r.code[p]; cnt[ch] = (cnt[ch] || 0) + 1; });
+      let top = base.code[p], tc = cnt[top] || 0;
+      for (const k in cnt) if (cnt[k] > tc) { top = k; tc = cnt[k]; }
+      o += top; if (p >= 10 && Object.keys(cnt).length > 1) diff.push("第 " + (p + 1) + " 碼（" + Object.keys(cnt).join(" / ") + "）");
+    }
+    const f = fixCode(o) || base;
+    return Object.assign({}, f, { soft: (diff.length ? "不同處理方式讀到的結果不一致：" + diff.join("、") + "，請對照圖片。" : "") || f.soft || base.soft });
+  }
+  async function ocrCode(full) {
+    /* 案號在表單上緣右側；保留較寬範圍，避免不同版型的欄位起點位移 */
+    const top = cropC(full, 0.24, 0, 1, 0.27, 1);
+    const d1 = await recog(top, ALNUM, 11, true);
+    let box = null;
+    for (const l of linesOf(d1)) {
+      const v = String(l.text || "").replace(/[^A-Za-z0-9]/g, "").toUpperCase();
+      if (v.length >= 10 && /Z[1IL]{2}5|AD[1IL]|[1I]{2}[59]/.test(v) && l.bbox) { box = l.bbox; break; }
+    }
+    let best = fixCode(d1.text || "");
+    let crop = null, fallback = false;
+    if (box) {
+      const p = 16, bw = box.x1 - box.x0 + 2 * p + 70, bh = box.y1 - box.y0 + 2 * p;
+      crop = cropPx(top, box.x0 - p, box.y0 - p, bw, bh, 2);
+      const d2 = await recog(crop, ALNUM, 7, false), r2 = fixCode(d2.text || "");
+      const d2b = await recog(enhance(crop, "gray"), ALNUM, 7, false), d2c = await recog(enhance(crop, "bin"), ALNUM, 7, false);
+      const v = voteCodes([r2, fixCode(d2b.text || ""), fixCode(d2c.text || "")]);
+      if (v && (!best || v.sc <= best.sc)) best = v;
+    }
+    /* 第一輪沒有找到完整案號或有格式疑點時，放大上緣再以單區塊模式補讀一次 */
+    if (!best || best.sc > 0) {
+      const enlarged = cropPx(top, 0, 0, top.width, top.height, 1.6);
+      const d3 = await recog(enlarged, ALNUM, 6, false), r3 = fixCode(d3.text || "");
+      if (r3 && (!best || r3.sc < best.sc)) { best = r3; if (!crop) { crop = enlarged; fallback = true; } }
+    }
+    return { best, img: crop ? url(crop, 0.9) : "", fallback };
+  }
+  async function renderFull(rec) {
+    const doc = docs[rec.fi], pg = await doc.getPage(rec.n), v0 = pg.getViewport({ scale: 1 });
+    const sc = Math.min(3.5, 2480 / v0.width), vp = pg.getViewport({ scale: sc }), full = document.createElement("canvas");
+    full.width = Math.floor(vp.width); full.height = Math.floor(vp.height);
+    const g = full.getContext("2d", { willReadFrequently: true }); g.fillStyle = "#fff"; g.fillRect(0, 0, full.width, full.height);
+    await pg.render({ canvasContext: g, viewport: vp }).promise;
+    pg.cleanup();
+    return full;
+  }
+  /* 中文辨識只在讀「案類」時才下載、使用 */
+  let chiWorker = null;
+  async function ensureChi() {
+    if (chiWorker) return chiWorker;
+    if (!window.Tesseract) await loadScript("https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js");
+    $("#progTxt").textContent = "正在下載中文辨識資料（只在讀取案類時需要，第一次會比較久）…";
+    chiWorker = await Tesseract.createWorker("chi_tra", 1, { logger: (m) => { if (m.status && /loading|initializ/.test(m.status)) $("#progTxt").textContent = "準備中文辨識… " + Math.round((m.progress || 0) * 100) + "%"; } });
+    return chiWorker;
+  }
+  /* 讀單子上方的標題：刑案呈報單（有犯嫌）／陳報單，以及「○○派出所」 */
+  const STN_LETTER = { 土城: "O", 廣福: "P", 清水: "Q", 金城: "M", 頂埔: "R", 交通: "9" };
+  /* 標題的派出所只能用來修正「長得像」的代號（O／P／Q／R／9 之間）或不合法的字；案號上已經讀到另一個合法代號（例如 M）時，
+     不能被標題蓋掉（土城／金城這類字也容易讀錯），改成提醒核對 */
+  const stnClose = (a, b) => a === b || "OPQR9".includes(a) && "OPQR9".includes(b);
+  const stnMayFix = (old, ttl) => stnClose(old, ttl) || !"OPQMR9".includes(old);
+  async function ocrHeader(full) {
+    const w = await ensureChi();
+    const band = cropC(full, 0.05, 0.02, 0.97, 0.45, 1);  /* 含呈報單的「查獲地點（○○派出所）」 */
+    let kind = "", stn = "", name = "";
+    for (const psm of ["6", "11"]) {
+      await w.setParameters({ tessedit_pageseg_mode: psm });
+      const t = String((await w.recognize(band)).data.text || "").replace(/\s+/g, "");
+      if (!kind) kind = /呈報單|案呈報|刑案/.test(t) ? "cap" : /陳報單|陳報/.test(t) ? "occ" : "";
+      if (!stn) { for (const m of t.matchAll(/([\u4e00-\u9fff]{2})(?:派出所|分隊)/g)) { const k = m[1]; if (STN_LETTER[k]) { stn = STN_LETTER[k]; name = k; break; } } }
+      if (kind && (stn || kind === "cap")) break;
+    }
+    return { kind, stn, name };
+  }
+  async function ocrCat(full) {
+    const w = await ensureChi();
+    await w.setParameters({ tessedit_pageseg_mode: "6" });
+    const band = cropC(full, 0.05, 0.30, 0.60, 0.72, 1);
+    const r = await w.recognize(band);
+    return parseCat(r.data.text || "");
+  }
+  async function runCat(r) {
+    $("#catNote").textContent = "辨識中…（第一次要下載中文資料）";
+    try {
+      const full = cleanPage(await renderFull(r)), c = await ocrCat(full);
+      full.width = full.height = 1;
+      if (!r.touched.cat) { if (c) { r.cat = c; r.catFlag = "自動辨識，請核對"; } else r.catFlag = "沒讀到，請照單子上的「觸犯法條」輸入"; }
+    } catch (e) { r.catFlag = "無法辨識（" + (e && e.message ? e.message : e) + "），請手動輸入"; }
+    if (pages[cur] === r) renderForm(); else renderTable();
+  }
+  async function processPage(rec) {
+    rec.status = "busy"; refreshStatus();
+    const full = await renderFull(rec);
+    const st0 = findSticky(full), bt0 = analyzeBottom(full);
+    cleanPage(full);
+    const view = cropC(full, 0, 0, 1, 1, Math.min(1, 1600 / full.width));
+    rec.img = url(view, 0.82);
+    rec.strip = rec.stripFull = url(cropC(full, 0.80, 0.62, 1, 1, 1), 0.9); rec.showFull = false;
+    const st = st0;
+    if (st) { rec.sticky = true; rec.stickyImg = url(cropPx(full, st[0] - 10, st[1] - 10, st[2] + 20, st[3] + 20, Math.min(1.5, 700 / (st[2] + 20))), 0.9); rec.type = "cap"; }
+    const bt = bt0;
+    if (bt && bt.num) rec.numImg = url(cropPx(full, bt.num[0], bt.num[1], bt.num[2], bt.num[3], 1), 0.9);
+    if (bt && bt.date && !rec.nameDate) rec.dateImg = url(cropPx(full, bt.date[0], bt.date[1], bt.date[2], bt.date[3], 1), 0.9);
+    if (worker) {
+      try {
+        const r = await ocrCode(full);
+        if (!rec.touched.code) {
+          rec.codeImg = r.img; rec.codeImgFb = !!r.fallback;
+          if (r.best) { rec.code = r.best.code; rec.codeFlags = r.best.flags; rec.codeSoft = r.best.soft || ""; } else rec.codeFlags = ["沒有讀到案號，請對照圖片輸入"];
+        }
+        if (bt && bt.date && !rec.nameDate) {
+          const c = cropPx(full, bt.date[0], bt.date[1], bt.date[2], bt.date[3], 3), d = await recog(c, "0123456789/", 7, false), dt = parseDate(d.text || "");
+          if (dt) rec.ocrDate = dt;
+        }
+        if (bt && bt.num && !rec.touched.docNo) {
+          const c = cropPx(full, bt.num[0], bt.num[1], bt.num[2], bt.num[3], 3), d = await recog(c, "0123456789", 7, false), dn = parseDoc(d.text || "");
+          if (dn) { rec.docNo = dn; rec.docFlag = "自動辨識，請核對"; }
+          else rec.docFlag = "已定位條碼，但文號未完整讀出，請對照圖片確認";
+        }
+      } catch (e) { rec.err = "辨識失敗：" + (e && e.message ? e.message : e); }
+    }
+    if (worker) {
+      try {
+        const hd = await ocrHeader(full);
+        if (hd.kind && !rec.touched.type) rec.type = hd.kind;
+        if (hd.stn && !rec.touched.code && rec.code.length === 15 && rec.code[10] === hd.stn) rec.codeSoft = rec.codeSoft.replace(/派出所代號 O 和 9[^。]*。 ?/, "");
+        if (hd.stn && !rec.touched.code && rec.code.length === 15 && rec.code[10] !== hd.stn && !stnMayFix(rec.code[10], hd.stn)) {
+          rec.codeFlags = (rec.codeFlags || []).concat("案號上的派出所代號是 " + rec.code[10] + "，但單子標題的派出所對應 " + hd.stn + "（沒有自動改），請對照圖片");
+        } else if (hd.stn && !rec.touched.code && rec.code.length === 15 && rec.code[10] !== hd.stn) {
+          const old = rec.code[10]; rec.code = rec.code.slice(0, 10) + hd.stn + rec.code.slice(11);
+          rec.codeSoft = "派出所代號依單子標題「" + hd.name + (hd.name === "交通" ? "分隊" : "派出所") + "」由 " + old + " 改成 " + hd.stn + "。" + (rec.codeSoft ? " " + rec.codeSoft : "");
+        }
+      } catch (e) { /* 中文辨識失敗時維持原判斷 */ }
+    }
+    if ((rec.type === "cap" || rec.type === "xfer") && worker && !rec.touched.cat) {
+      try { const c = await ocrCat(full); if (c) { rec.cat = c; rec.catFlag = "自動辨識，請核對"; } else rec.catFlag = "沒讀到，請照單子上的「觸犯法條」輸入"; }
+      catch (e) { rec.catFlag = "無法辨識中文（" + (e && e.message ? e.message : e) + "），請手動輸入"; }
+    }
+    if (aiReady()) {   /* AI 補讀：只填沒被你手動改過的欄位，並與本機辨識比對 */
+      try { applyAi(rec, await aiRead(rec, full, st0, bt0)); aiStat.ok++; }
+      catch (e) { aiFail(rec, e); }
+      aiUi();
+    }
+    applyDate(rec, "");
+    rec.status = "ok";
+    full.width = full.height = 1;
+  }
+  /* 一個檔案就是同一天：檔名日期 > 該檔多數頁讀到的貼紙日期 > 預設日期 > 前一頁 */
+  function applyDate(rec, maj) {
+    if (rec.touched.date) return;
+    const nd = rec.nameDate, def = "", d = nd || maj || rec.ocrDate || prevDate(rec);
+    rec.date = d || "";
+    rec.dateFlag = !d ? "沒讀到日期，請輸入" : nd && maj && nd !== maj ? "檔名日期（" + nd + "）和貼紙多數日期（" + maj + "）不同，已採用檔名，請確認" : !(nd || maj || rec.ocrDate || def) ? "沿用前一頁的日期，請核對" : "";
+  }
+  function fixFileDates() {
+    const cnt = {};
+    pages.forEach((p) => { if (p.ocrDate) { cnt[p.fi] = cnt[p.fi] || {}; cnt[p.fi][p.ocrDate] = (cnt[p.fi][p.ocrDate] || 0) + 1; } });
+    pages.forEach((p) => { const c = cnt[p.fi]; applyDate(p, c ? Object.keys(c).sort((a, b) => c[b] - c[a])[0] : ""); });
+  }
+  function prevDate(rec) { const i = pages.indexOf(rec); for (let k = i - 1; k >= 0; k--) if (pages[k].date) return pages[k].date; return ""; }
+
+  /* ================= AI（Google Gemini）輔助 ================= */
+  const KEY_AI = "pdf-register-ai", DESTS = [
+    "中和", "板橋", "新莊", "三峽", "樹林", "永和", "中壢", "桃園", "三重", "新店", "蘆洲", "海山",
+    "中市六", "屏東", "永康", "中山", "萬華", "中市五", "大安", "鳳山", "彰化", "淡水", "土城", "八德",
+    "中市三", "清水", "中市二", "平鎮", "龜山", "三民二", "信義", "內湖", "士林", "霧峰", "林口", "仁武",
+    "楊梅", "岡山", "豐原", "苓雅", "大園", "楠梓", "汐止", "林園", "大雅", "竹北", "蘆竹", "烏日",
+    "前鎮", "中市四", "中市一", "員林", "南市一", "松山", "北投", "歸仁", "苗栗", "大同", "太平", "竹市二",
+    "嘉市一", "南市三", "左營", "斗六", "羅東", "南市五", "新湖", "台東", "竹市一", "新興", "花蓮", "鹿港",
+    "頭份", "宜蘭", "竹市三", "竹南", "大甲", "鼓山", "南市二", "民雄", "善化", "小港", "東港", "基市四",
+    "虎尾", "中正一", "湖內", "新營", "竹東", "基市二", "龍潭", "南港", "吉安", "和美", "南投", "三民一",
+    "大溪", "南市六", "內埔", "麻豆", "嘉市二", "文山二", "文山一", "北斗", "埔里", "溪湖", "中正二", "潮州",
+    "基市三", "里港", "礁溪", "芳苑", "草屯", "斗南", "水上", "基市一", "南市四", "臺西", "佳里", "田中",
+    "旗山", "西螺", "北港", "朴子", "馬公", "東勢", "新埔", "通霄", "竹山", "恆春", "瑞芳", "枋寮",
+    "白河", "中埔", "新城", "新化", "蘇澳", "金山", "竹崎", "鳳林", "金城", "橫山", "學甲", "集集",
+    "大湖", "關山", "鹽埕", "玉里", "三星", "金湖", "玉井", "布袋", "大武", "成功", "中興", "六龜",
+    "仁愛", "和平", "南投信義", "白沙", "望安"];
+  const DESTS_L = DESTS.slice().sort((a, b) => b.length - a.length), tn = (t) => String(t).replace(/臺/g, "台");
+  const destFind = (t) => DESTS_L.find((x) => tn(t).includes(tn(x))) || "";   /* 「南投信義」要比「信義」優先；臺／台視為相同 */
+  { const dl = $("#destList"); if (dl) dl.innerHTML = DESTS.map((d) => '<option value="' + d + '">').join(""); }   /* 轉往分局的輸入提示 */
+  const AI = { on: false, key: "", model: "gemini-3.5-flash-lite", model2: "gemini-3.8-flash", zoom: true, schema: false, zoomModel: "gemini-3.8-flash", rpm2: 5, rpm: 5, only: false, rpd: 0 };
+  const aiStat = { ok: 0, err: 0, tok: 0 };
+  let aiLast = 0, aiStop = false, aiBusy = false, aiFatal = "";
+  let aiSwitched = "", aiSchemaOff = false, aiZoomDead = false;   /* aiZoomDead：二次放大專用模型今天額度用完，這次作業改用主模型 */   /* aiSwitched：主模型今天額度用完後，這次作業改用的備援模型；aiSchemaOff：模型不接受固定格式時，改回原本的做法 */
+  const aiReady = () => AI.on && AI.key.length > 10 && !aiFatal;
+  const aiS = (v) => (v == null ? "" : String(v)).trim();
+  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+  /* 記住你的更正：AI 讀到的手寫字 → 你改成的名字（只存在這台瀏覽器） */
+  const KEY_FIX = "pdf-register-fixes";
+  const fixNorm = (t) => aiS(t).replace(/\s+/g, "");
+  function fixLoad() { try { const o = JSON.parse(lsGet(KEY_FIX) || "{}"); return o && typeof o === "object" && !Array.isArray(o) ? o : {}; } catch (e) { return {}; } }
+  function learnFixes() {
+    try {
+      const f = fixLoad(); let n = 0;
+      const add = (raw, name) => { raw = fixNorm(raw); if (!raw || !roster.includes(name) || f[raw] === name) return; delete f[raw]; f[raw] = name; n++; };
+      pages.forEach((r) => {
+        if (r.skip || r.type === "xfer") return;
+        if (r.touched.who && r.aiWhoRaw && r.who !== r.aiWho) add(r.aiWhoRaw, r.who);
+        if (r.sticky && r.touched.realWho && r.aiSRaw && r.realWho !== r.aiSWho) add(r.aiSRaw, r.realWho);
+      });
+      const ks = Object.keys(f); ks.slice(0, Math.max(0, ks.length - 200)).forEach((k) => delete f[k]);
+      if (n) lsSet(KEY_FIX, JSON.stringify(f));
+    } catch (e) {}
+  }
+  function aiVis() { const on = aiReady(); $("#aiPage").hidden = !on; $("#aiTxtBox").hidden = !on; $("#hintRow").hidden = !on; }
+  /* ---- API 用量：每次回應的 usageMetadata 累加，按太平洋時間的日期存在這個瀏覽器 ---- */
+  const KEY_USE = "pdf-register-usage";
+  const ptDay = () => new Intl.DateTimeFormat("en-CA", { timeZone: "America/Los_Angeles" }).format(new Date());
+  const useLoad = () => { try { const o = JSON.parse(lsGet(KEY_USE) || "{}"); return o && typeof o === "object" && !Array.isArray(o) ? o : {}; } catch (e) { return {}; } };
+  function useAdd(ok, js, model, fell) {
+    try {
+      const u = useLoad(), k = ptDay(), t = u[k] || (u[k] = { ok: 0, err: 0, inp: 0, out: 0, tot: 0, m: {} }), m = model || AI.model;
+      if (ok && fell) t.fb = (t.fb || 0) + 1;   /* 由備援模型讀的請求數 */
+      const md = (js && js.usageMetadata) || {}, inp = md.promptTokenCount || 0, tot = md.totalTokenCount || 0, out = Math.max(0, tot - inp);
+      if (ok) { t.ok++; t.inp += inp; t.out += out; t.tot += tot; } else t.err++;
+      const mm = t.m[m] || (t.m[m] = { ok: 0, tot: 0 }); if (ok) { mm.ok++; mm.tot += tot; }
+      Object.keys(u).sort().slice(0, Math.max(0, Object.keys(u).length - 14)).forEach((x) => delete u[x]);
+      lsSet(KEY_USE, JSON.stringify(u));
+    } catch (e) {}
+  }
+  function useBump(key) {   /* 額外記一筆，例如 zoom＝二次放大 */
+    try { const u = useLoad(), k = ptDay(), t = u[k] || (u[k] = { ok: 0, err: 0, inp: 0, out: 0, tot: 0, m: {} }); t[key] = (t[key] || 0) + 1; lsSet(KEY_USE, JSON.stringify(u)); } catch (e) {}
+  }
+  function useUi() {
+    const el = $("#aiUse"); if (!el) return;
+    const u = useLoad(), k = ptDay(), t = u[k] || { ok: 0, err: 0, inp: 0, out: 0, tot: 0, m: {} }, lim = +AI.rpd > 0 ? +AI.rpd : 0, nf = (n) => Number(n).toLocaleString();
+    el.textContent = "今天（太平洋時間 " + k + "，台灣約隔天下午 3～4 點重置）：成功 " + t.ok + " 次、失敗 " + t.err + " 次；共約 " + nf(t.tot) + " tokens（輸入 " + nf(t.inp) + "、輸出與思考 " + nf(t.out) + "）" + (t.zoom || t.fb ? "；其中二次放大 " + (t.zoom || 0) + " 次、備援模型 " + (t.fb || 0) + " 次" : "") + (lim ? "。每日上限 " + lim + " 次，約剩 " + Math.max(0, lim - t.ok - t.err) + " 次" : "");
+    const days = Object.keys(u).sort().reverse().slice(0, 7);
+    $("#aiHist").textContent = days.length ? days.map((d) => d + "　成功 " + u[d].ok + "、失敗 " + u[d].err + "、" + nf(u[d].tot) + " tokens　" + Object.keys(u[d].m || {}).map((x) => x + "×" + u[d].m[x].ok).join("、") + (u[d].zoom ? "；二次放大×" + u[d].zoom : "") + (u[d].fb ? "；備援×" + u[d].fb : "")).join("\n") : "還沒有紀錄。";
+    const ok7 = days.reduce((s, d) => s + u[d].ok, 0), tok7 = days.reduce((s, d) => s + u[d].tot, 0), avg = ok7 ? Math.round(tok7 / ok7) : 0;
+    const zm7 = days.reduce((s, d) => s + (u[d].zoom || 0), 0), ratio = AI.zoom && ok7 - zm7 >= 10 ? zm7 / (ok7 - zm7) : 0;   /* 近 7 天，每讀一頁平均多出幾次二次放大 */
+    const n = (typeof pages !== "undefined" ? pages : []).filter((r) => !r.aiDone && !r.skip).length, req = Math.ceil(n * (1 + ratio)), left = lim ? lim - t.ok - t.err : null;
+    $("#aiEst").textContent = !n ? "" : "這批還有 " + n + " 頁沒用 AI 讀：預計送出約 " + req + " 次請求" + (ratio > 0 ? "（每頁 1 次，加上二次放大約 " + (req - n) + " 次，依近 7 天的比例估算）" : AI.zoom ? "（每頁 1 次；二次放大只在讀不出承辦人的頁面多 1 次，還沒有足夠紀錄可估，實際會略多）" : "") + (avg ? "、約 " + nf(req * avg) + " tokens（以近 7 天每次平均 " + nf(avg) + " 計）" : "") + "，依每分鐘 " + AI.rpm + " 次至少約需 " + Math.ceil(req / Math.max(1, AI.rpm)) + " 分鐘。" + (left == null ? "" : req > left ? "⚠ 超過今天剩下的約 " + Math.max(0, left) + " 次，可能讀不完；可以改用「只用本機辨識」或分到明天。" : "今天的額度夠用。");
+  }
+  function aiUi() {
+    aiVis(); useUi();
+    const el = $("#aiInfo"); if (!el) return;
+    el.textContent = aiFatal ? "AI 已暫停：" + aiFatal + "（修改設定或按「測試連線」可重新啟用）"
+      : (aiStat.ok || aiStat.err) ? "AI 已讀 " + aiStat.ok + " 次，失敗 " + aiStat.err + " 次，累計約 " + aiStat.tok.toLocaleString() + " tokens。"
+      : AI.key.length > 10 ? "已設定金鑰。加入 PDF 後會自動用 AI 讀取；也可以先按「測試連線」。"
+      : "請貼上 API 金鑰（到 aistudio.google.com 按 Get API key 申請）。";
+    if (aiSwitched && !aiFatal) el.textContent += "　主模型的額度用完了，目前改用備援模型 " + aiSwitched + "。";
+  }
+  function aiSave() {
+    AI.on = $("#aiOn").checked; AI.key = $("#aiKey").value.trim();
+    AI.model = ($("#aiModel").value.trim() || "gemini-3.5-flash-lite").replace(/^models\//, "");
+    const n = parseInt($("#aiRpm").value, 10); AI.rpm = n > 0 ? Math.min(n, 300) : 5; AI.only = $("#aiOnly").checked; AI.rpd = Math.max(0, parseInt($("#aiRpd").value, 10) || 0);
+    AI.model2 = $("#aiModel2").value.trim().replace(/^models\//, ""); AI.zoom = $("#aiZoom").checked; AI.schema = $("#aiSchema").checked; AI.zoomModel = $("#aiZoomModel").value.trim().replace(/^models\//, ""); AI.rpm2 = Math.max(1, Math.min(60, parseInt($("#aiRpm2").value, 10) || 5)); aiSwitched = ""; aiSchemaOff = false; aiZoomDead = false;
+    aiFatal = ""; lsSet(KEY_AI, JSON.stringify(AI)); $("#aiOpts").hidden = !AI.on; aiUi();
+  }
+  function aiLoad() {
+    try { const s = JSON.parse(lsGet(KEY_AI) || "null"); if (s && typeof s === "object") Object.assign(AI, s); } catch (e) {}
+    AI.key = String(AI.key || ""); AI.model = String(AI.model || "gemini-3.5-flash-lite").replace(/^models\//, ""); AI.rpm = +AI.rpm > 0 ? +AI.rpm : 5;
+    $("#aiOn").checked = !!AI.on; $("#aiKey").value = AI.key; $("#aiModel").value = AI.model; $("#aiRpm").value = AI.rpm; $("#aiOnly").checked = !!AI.only; $("#aiRpd").value = AI.rpd > 0 ? AI.rpd : "";
+    AI.model2 = String(AI.model2 == null ? "" : AI.model2).replace(/^models\//, ""); $("#aiModel2").value = AI.model2; $("#aiZoom").checked = AI.zoom !== false; $("#aiSchema").checked = !!AI.schema;
+    AI.zoomModel = String(AI.zoomModel == null ? "" : AI.zoomModel).replace(/^models\//, ""); AI.rpm2 = +AI.rpm2 > 0 ? +AI.rpm2 : 5; $("#aiZoomModel").value = AI.zoomModel; $("#aiRpm2").value = AI.rpm2;
+    $("#aiOpts").hidden = !AI.on; aiUi();
+  }
+  ["aiKey", "aiModel", "aiModel2", "aiZoomModel", "aiRpm2", "aiRpm", "aiRpd"].forEach((id) => $("#" + id).addEventListener("input", aiSave));
+  ["aiOn", "aiOnly", "aiZoom", "aiSchema"].forEach((id) => $("#" + id).addEventListener("change", aiSave));
+
+  /* 限速：兩次送出之間至少隔 60 秒 / 每分鐘頁數；等待時可以按停止 */
+  async function waitMsg(ms, label) {
+    const end = Date.now() + ms;
+    while (Date.now() < end) {
+      if (aiStop) throw new Error("已停止");
+      $("#progTxt").textContent = label + " " + Math.ceil((end - Date.now()) / 1000) + " 秒…";
+      await sleep(Math.min(500, Math.max(50, end - Date.now())));
+    }
+  }
+  async function aiGate(rpm) {
+    if (aiStop) throw new Error("已停止");
+    const r = rpm > 0 ? Math.min(rpm, AI.rpm) : AI.rpm, wait = aiLast + 60000 / Math.max(1, r) - Date.now();
+    if (wait > 0) await waitMsg(wait, "AI 限速等待（每分鐘最多 " + r + " 次）");
+    aiLast = Date.now();
+  }
+  function retrySec(er) {
+    for (const d of (er && er.details) || []) if (d && d.retryDelay) { const m = String(d.retryDelay).match(/([\d.]+)s/); if (m) return parseFloat(m[1]); }
+    const m = String((er && er.message) || "").match(/retry in ([\d.]+)\s*s/i);
+    return m ? parseFloat(m[1]) : null;
+  }
+  const aiDaily = (er) => /PerDay/i.test(JSON.stringify(er || {}));
+  const aiZero = (er) => /limit:\s*0\b/.test(String((er && er.message) || ""));
+  function aiErr(code, er, model) {
+    model = model || AI.model;
+    const m = String(er.message || ""); let t, fatal = false;
+    if (code === 400 && /API key/i.test(m)) { t = "API 金鑰無效，請重新貼上"; fatal = true; }
+    else if (code === 403) { t = "金鑰沒有權限，或這個地區不能使用（" + m.slice(0, 120) + "）"; fatal = true; }
+    else if (code === 404) { t = "找不到模型「" + model + "」，請改用 gemini-3.5-flash-lite 或 gemini-3.8-flash（新帳號可能無法使用舊的 2.5 系列），或到 AI Studio 查詢可用的模型名稱"; fatal = true; }
+    else if (code === 429) {
+      fatal = aiDaily(er) || aiZero(er);
+      t = aiDaily(er) ? "今天的免費額度用完了（每天太平洋時間午夜重置，約台灣下午 3～4 點）" : aiZero(er) ? "這個模型沒有免費額度，請改用 gemini-3.5-flash-lite 之類的模型" : "一直被限速，請調低「每分鐘最多送幾頁」";
+    } else t = "AI 錯誤 " + code + "：" + m.slice(0, 160);
+    const e = new Error(t); e.fatal = fatal; return e;
+  }
+  async function callGemini(parts, schema, opt) {
+    const prefer = opt && opt.model && !aiZoomDead ? opt.model : "";   /* 偏好模型（例如二次放大專用），失敗時先改回主模型，再不行才用備援 */
+    let model = prefer || aiSwitched || AI.model, fell = !prefer && !!aiSwitched;
+    const toFallback = () => {
+      if (prefer && model === prefer) { const alt = aiSwitched || AI.model; if (alt !== model) { model = alt; fell = !!aiSwitched; return true; } }
+      const m2 = AI.model2; if (m2 && model !== m2) { model = m2; fell = true; return true; }
+      return false;
+    };
+    const apiOf = () => "https://generativelanguage.googleapis.com/v1beta/models/" + encodeURIComponent(model) + ":generateContent";
+    const bodyOf = (sch) => JSON.stringify({ contents: [{ role: "user", parts }], generationConfig: sch ? { temperature: 0, responseMimeType: "application/json", responseSchema: sch } : { temperature: 0, responseMimeType: "application/json" } });
+    for (let a = 0; ; a++) {
+      await aiGate(model === AI.model ? 0 : AI.rpm2);
+      const useSchema = !!schema && !aiSchemaOff;
+      let res, js; const ctl = new AbortController(), to = setTimeout(() => ctl.abort(), 150000);
+      try {
+        res = await fetch(apiOf(), { method: "POST", headers: { "Content-Type": "application/json", "x-goog-api-key": AI.key }, body: bodyOf(useSchema ? schema : null), signal: ctl.signal });
+        js = await res.json().catch(() => ({}));
+      } catch (e) {
+        clearTimeout(to);
+        if (a < 2) { await waitMsg(5000 * (a + 1), "網路不穩，重試"); continue; }
+        throw new Error(e && e.name === "AbortError" ? "AI 回應逾時" : "無法連線到 Google（" + (e && e.message ? e.message : e) + "），請檢查網路，或網路是否擋住 generativelanguage.googleapis.com");
+      }
+      clearTimeout(to);
+      if (res.ok) { useAdd(true, js, model, fell); js._model = model; return js; }
+      useAdd(false, null, model, fell);
+      const er = js.error || {}, code = res.status;
+      /* 模型不接受固定格式：這次作業改回原本的做法（只靠提示詞要求 JSON），再試一次 */
+      if (code === 400 && useSchema && /schema|propertyOrdering|property_ordering|Unknown name|Invalid JSON payload/i.test(String(er.message || ""))) { aiSchemaOff = true; a = -1; continue; }
+      if (code === 429 && !aiDaily(er) && !aiZero(er) && a < 5) { const s = retrySec(er); await waitMsg(((s != null ? s : 20) + 2) * 1000, "達到每分鐘上限，等待"); continue; }
+      if ((code === 500 || code === 503 || code === 504) && a < 3) { await waitMsg(8000 * (a + 1), "Google 伺服器忙碌，重試"); continue; }
+      /* 備援：主模型今天額度用完（之後都改用備援）、或一直被限速／Google 伺服器忙碌（只這一次改用） */
+      const dead = code === 429 && (aiDaily(er) || aiZero(er));
+      const failed = model;
+      if ((code === 429 || code === 500 || code === 503 || code === 504) && toFallback()) {
+        if (dead) { if (prefer && failed === prefer) aiZoomDead = true; else aiSwitched = model; }   /* 專用模型額度用完→這次作業不再用它；主模型用完→之後改用備援 */
+        a = -1; aiUi(); continue;
+      }
+      throw aiErr(code, er, model);
+    }
+  }
+  function aiText(js) {
+    const c = js.candidates && js.candidates[0];
+    if (!c) throw new Error(js.promptFeedback && js.promptFeedback.blockReason ? "AI 拒絕處理這一頁（" + js.promptFeedback.blockReason + "）" : "AI 沒有回傳內容");
+    const t = ((c.content && c.content.parts) || []).map((p) => p.text || "").join("");
+    if (!t.trim()) throw new Error("AI 回傳空白" + (c.finishReason ? "（" + c.finishReason + "）" : ""));
+    return t;
+  }
+  function aiJson(t) {
+    t = String(t).replace(/^\s*```(?:json)?\s*|\s*```\s*$/g, "").trim();
+    try { return JSON.parse(t); } catch (e) {}
+    const a = t.indexOf("{"), b = t.lastIndexOf("}");
+    if (a >= 0 && b > a) { try { return JSON.parse(t.slice(a, b + 1)); } catch (e) {} }
+    throw new Error("AI 回傳的格式無法解析（可能被截斷），可再按一次重試");
+  }
+
+  /* 送給 AI 的圖：整頁、案號區、手寫承辦人、便條紙、文號、日期 */
+  const aiShot = (full, x0, y0, x1, y1, maxW) => cropC(full, x0, y0, x1, y1, Math.min(1, maxW / (full.width * (x1 - x0))));
+  const aiShotPx = (full, r, maxW) => cropPx(full, r[0], r[1], r[2], r[3], Math.min(1, maxW / r[2]));
+  /* 收文貼紙的條碼與數字常常延伸到右下邊緣，AI 會把印刷的數字誤當成手寫字；送出前把它塗白（只塗送給 AI 的這張，不動原圖） */
+  function maskSticker(c, full, r) {
+    const sx = Math.floor(full.width * 0.80), sy = Math.floor(full.height * 0.62), k = c.width / Math.max(1, Math.ceil(full.width * 0.20));
+    if (r[0] + r[2] <= sx || r[1] + r[3] <= sy) return;
+    const g = c.getContext("2d"); g.fillStyle = "#fff"; g.fillRect((r[0] - sx) * k, (r[1] - sy) * k, r[2] * k, r[3] * k);
+  }
+  function aiShots(full, st, bt) {
+    const L = [];
+    L.push({ tag: "page", label: "整頁（縮小，用來判斷單子種類與有沒有便條紙）", c: aiShot(full, 0, 0, 1, 1, 1500) });
+    L.push({ tag: "top", label: "頁面上緣右側（E化案號與標題所在處）", c: aiShot(full, 0.24, 0, 1, 0.27, 1600) });
+    const stripC = aiShot(full, 0.80, 0.62, 1, 1, 1600);
+    if (bt && bt.sticker) maskSticker(stripC, full, bt.sticker);
+    L.push({ tag: "strip", label: "頁面右下邊緣（手寫承辦人姓名處）", c: stripC });
+    if (st) L.push({ tag: "sticky", label: "偵測到的便條紙（上面可能有實際承辦人姓名）", c: cropPx(full, st[0] - 10, st[1] - 10, st[2] + 20, st[3] + 20, Math.min(1.5, 900 / (st[2] + 20))) });
+    if (bt && bt.num) L.push({ tag: "num", label: "收文條碼下方的文號數字", c: aiShotPx(full, bt.num, 1200) });
+    if (bt && bt.date) L.push({ tag: "date", label: "收文貼紙上的日期", c: aiShotPx(full, bt.date, 1200) });
+    return L;
+  }
+  function aiPrompt(list, hint) {
+    return "你是台灣派出所公文登記的助手。下面是同一頁掃描的「陳報單」或「刑案呈報單」，依序附上幾張圖：\n" +
+      list.map((x, i) => "圖" + (i + 1) + "＝" + x.label).join("\n") +
+      (hint ? "\n\n【使用者提示】使用者已親自看過「右下邊緣」那張圖上手寫承辦人的地方，確認寫的字是「" + hint + "」。請以此為準：who_raw 就填「" + hint + "」，並從名單中選出名字含有這些字、最符合的人；若名單裡有多位都符合，who 回空字串，改在 who_candidates 列出可能的人。其他欄位照常自己判斷。" : "") +
+      "\n\n請讀出下列欄位，只回傳一個 JSON 物件，不要任何其他文字。看不清楚或沒有的欄位回空字串，不要猜、不要編造。\n{\n" +
+      ' "type": "occ、cap、xfer 其中之一，看不出來回空字串。occ＝標題為「陳報單」（發生案件）；cap＝標題為「刑案呈報單」（破獲案件，有嫌疑人）；xfer＝右下邊緣手寫處寫的不是人名，而是轉往的分局名稱（請從文末的「分局名單」選）",\n' +
+      ' "station_name": "標題或「查獲地點」裡的「○○派出所／分隊」，只回兩個字，例如 土城、廣福、清水、金城、頂埔、交通",\n' +
+      ' "code": "E化案號，共 15 碼英數字，位於頁面上緣。格式：Z + 民國年3碼 + 月份2碼 + 9 + AD1 + 派出所代號2碼（O1、P1、Q1、M1、R1 或 91）+ 末3碼（全是數字）。請逐字照抄，字母 O 與數字 0、字母 I 與數字 1 請依這個格式判斷",\n' +
+      ' "code_box": "那 15 碼 E化案號本身在「頁面上緣右側」那張圖裡的位置，格式 [ymin, xmin, ymax, xmax]，座標是 0 到 1000 的整數；請緊貼這串英數字，不要包含「案號」標籤、標題或其他欄位的字；看不到回空陣列",\n' +
+      ' "who": "「右下邊緣」那張圖上手寫的承辦人（可能只寫姓名中的一兩個字，或是簽名）。請從這份名單選出最像的一位，回名單上的全名，無法確定就回空字串。名單：' + roster.join("、") + '。若是 xfer，填轉往的分局名稱",\n' +
+      ' "who_box": "手寫承辦人姓名（或簽名）在「右下邊緣」那張圖裡的位置，格式 [ymin, xmin, ymax, xmax]，座標 0 到 1000 的整數；只框住手寫的字本身，不要包含其他印刷文字、條碼或空白；看不到回空陣列",\n' +
+      ' "who_raw": "你在那張圖上實際看到的字，照抄",\n' +
+      ' "who_candidates": ["無法確定時，列出最多 3 位名單中可能的人；否則回空陣列"],\n' +
+      ' "has_sticky": "true 或 false：這一頁是否貼有黃色或橘色的便條紙",\n' +
+      ' "sticky_who": "便條紙上寫的實際承辦人，同樣從名單選出全名；沒有便條紙回空字串",\n' +
+      ' "sticky_who_raw": "便條紙上實際看到的字，照抄",\n' +
+      ' "sticky_candidates": [],\n' +
+      ' "sticky_transfer": "便條紙上若寫著要「移轉」給某分局（例如「移轉○○分局」），只回分局名稱、不含「分局」二字（例如「板橋」），優先從文末的「分局名單」選；名單裡沒有的分局就照抄你看到的字；沒有這類字樣回空字串。這種情況下 sticky_who 請回空字串（分局名稱不是人名）",\n' +
+      ' "cat": "只有 cap 或 xfer 才填：單子上「觸犯法條」那一列的文字，逐字照抄，不要增減",\n' +
+      ' "doc_no": "收文條碼下方的數字。格式：民國年3碼（11 開頭）+ 7 碼流水號，共 10 位數字",\n' +
+      ' "date": "收文貼紙上的日期，民國年/月/日，例如 115/11/17",\n' +
+      ' "note": "哪個欄位看不清楚、哪裡讓你不確定，簡短說明；沒有就空字串"\n}' +
+      "\n\n分局名單：" + DESTS.join("、") + "\n名單簡稱說明：「中市」＝臺中市、「南市」＝臺南市、「竹市」＝新竹市、「嘉市」＝嘉義市、「基市」＝基隆市，後面的數字是第幾分局（例如「中市六」＝臺中市第六分局）；「三民一」「三民二」＝高雄市三民第一、第二分局；「中正一」「中正二」「文山一」「文山二」＝臺北市的分局；「南投信義」＝南投縣信義分局，「信義」＝臺北市信義分局。";
+  }
+
+  /* 送給 Gemini 的固定回傳格式：欄位順序讓 who_raw（實際看到的字）排在 who（判斷結果）前面，先抄字再判斷 */
+  const AI_SCHEMA = (() => {
+    const S = { type: "STRING" }, A = { type: "ARRAY", items: { type: "STRING" } }, B = { type: "ARRAY", items: { type: "INTEGER" } };
+    const props = { type: S, station_name: S, code: S, code_box: B, who_raw: S, who: S, who_candidates: A, who_box: B, has_sticky: S, sticky_who_raw: S, sticky_who: S, sticky_candidates: A, sticky_transfer: S, cat: S, doc_no: S, date: S, note: S };
+    return { type: "OBJECT", properties: props, propertyOrdering: Object.keys(props) };
+  })();
+  const AI_ZOOM_SCHEMA = { type: "OBJECT", properties: { who_raw: { type: "STRING" }, who: { type: "STRING" }, who_candidates: { type: "ARRAY", items: { type: "STRING" } }, note: { type: "STRING" } }, propertyOrdering: ["who_raw", "who", "who_candidates", "note"] };
+
+  /* 二次放大重讀：第一次讀不出承辦人（或有好幾位候選）時，只把手寫處放大再問一次。
+     兩次讀法一致才採用；兩次不同就不填，只列出候選，讓你自己核對。出任何錯都不影響第一次讀到的結果。 */
+  async function aiZoomWho(rec, j, strip, wb) {
+    if (!AI.zoom || !aiReady() || rec.whoHint || rec.touched.who || rec.type === "xfer") return;
+    if (aiS(j.sticky_transfer) || aiS(j.type) === "xfer" || destFind(aiS(j.who) + aiS(j.who_raw))) return;   /* 寫的是轉往的分局，不是人名 */
+    const p1 = rosterPick(j.who, j.who_raw, j.who_candidates);
+    if (p1.name) return;   /* 第一次就確定了，不用再讀 */
+    let x0 = wb[1] / 1000 - 0.04, x1 = wb[3] / 1000 + 0.04, y0 = wb[0] / 1000 - 0.03, y1 = wb[2] / 1000 + 0.03;
+    if (x1 - x0 < 0.3) { const m = (x0 + x1) / 2; x0 = m - 0.15; x1 = m + 0.15; }
+    if (y1 - y0 < 0.08) { const m = (y0 + y1) / 2; y0 = m - 0.04; y1 = m + 0.04; }
+    x0 = Math.max(0, x0); x1 = Math.min(1, x1); y0 = Math.max(0, y0); y1 = Math.min(1, y1);
+    const sc = Math.max(1, Math.min(3, 1000 / Math.max(1, strip.width * (x1 - x0)), 1400 / Math.max(1, strip.height * (y1 - y0))));
+    let c = cropC(strip, x0, y0, x1, y1, sc);
+    if (c.width >= 20 && c.height >= 20 && inkRatio(c) < 0.002) {   /* AI 框的位置裁到空白處：改送右下邊緣右側大半（含手寫處與少量印刷字） */
+      c.width = c.height = 1; c = cropC(strip, 0.40, 0, 1, 1, Math.max(1, Math.min(2, 2400 / Math.max(1, strip.height))));
+    }
+    if (c.width < 20 || c.height < 20) { c.width = c.height = 1; return; }
+    const prompt = "這是一張放大的手寫字截圖，出自台灣派出所「陳報單」或「刑案呈報單」右下邊緣的承辦人簽名處。可能只寫了姓名中的一兩個字，也可能是潦草的簽名。圖上若還有印刷的表格文字，請忽略，只讀手寫的字。\n" +
+      "請只回傳一個 JSON 物件，不要其他文字：\n{\n \"who_raw\": \"你實際看到的字，逐字照抄；完全看不出來就回空字串\",\n" +
+      " \"who\": \"從下面的名單選出最像的一位，回名單上的全名；沒有把握就回空字串，不要猜\",\n" +
+      " \"who_candidates\": [\"無法確定時，列出最多 3 位名單中可能的人；否則回空陣列\"],\n" +
+      " \"note\": \"哪裡看不清楚，簡短說明；沒有就空字串\"\n}\n" +
+      "如果寫的是轉往的分局名稱而不是人名，who 回空字串，who_raw 照抄。\n\n名單：" + roster.join("、");
+    let js2;
+    try {
+      js2 = await callGemini([{ text: prompt }, { inline_data: { mime_type: "image/jpeg", data: url(c, 0.92).split(",")[1] } }], AI.schema ? AI_ZOOM_SCHEMA : null, { model: AI.zoomModel });
+    } catch (e) {
+      const m = e && e.message ? e.message : String(e);
+      if (e && e.fatal) { aiFatal = m; show("AI 已暫停：" + m, "warn"); }
+      if (m !== "已停止") j._zoom = "放大重讀沒有完成（" + m.slice(0, 60) + "）";
+      return;
+    } finally { c.width = c.height = 1; }
+    aiStat.tok += (js2.usageMetadata && js2.usageMetadata.totalTokenCount) || 0;
+    rec.zoomModel = js2._model; useBump("zoom");
+    let j2; try { j2 = aiJson(aiText(js2)); } catch (e) { j._zoom = "放大重讀的回覆無法解析"; return; }
+    if (!j2 || typeof j2 !== "object" || Array.isArray(j2)) return;
+    const p2 = rosterPick(j2.who, j2.who_raw, j2.who_candidates), raw2 = aiS(j2.who_raw);
+    if (p2.name) {
+      if (p1.maybe.length && !p1.maybe.includes(p2.name)) {   /* 兩次讀法不一致：不填，列出候選 */
+        j.who = ""; j.who_candidates = Array.from(new Set([...p1.maybe, p2.name])).slice(0, 4); j._zoom = "放大重讀與第一次讀的不同，請對照圖片自己判斷";
+      } else {
+        j.who = p2.name; j.who_candidates = []; if (raw2) j.who_raw = raw2; j._zoom = "第一次讀不出來，放大手寫處重讀後確定";
+      }
+    } else if (p2.maybe.length) {
+      j.who_candidates = Array.from(new Set([...p1.maybe, ...p2.maybe])).slice(0, 4); if (raw2 && !aiS(j.who_raw)) j.who_raw = raw2; j._zoom = "放大重讀後仍無法確定";
+    } else if (raw2 && !aiS(j.who_raw)) j.who_raw = raw2;
+    if (j._zoom && rec.zoomModel && rec.zoomModel !== AI.model) j._zoom += "（用 " + rec.zoomModel + " 重讀）";
+  }
+  async function aiRead(rec, full, st, bt) {
+    const shots = aiShots(full, st, bt);
+    try {
+      const parts = [{ text: aiPrompt(shots, rec.whoHint) }];
+      shots.forEach((x, i) => { parts.push({ text: "圖" + (i + 1) + "：" + x.label }); parts.push({ inline_data: { mime_type: "image/jpeg", data: url(x.c, 0.85).split(",")[1] } }); });
+      const js = await callGemini(parts, AI.schema ? AI_SCHEMA : null);
+      rec.aiModels = [js._model]; rec.zoomModel = "";
+      aiStat.tok += (js.usageMetadata && js.usageMetadata.totalTokenCount) || 0;
+      const j = aiJson(aiText(js));
+      /* 只用 AI 時沒有本機的案號裁切圖：依 AI 回報的位置裁出案號那一行，位置不合理就放整個上緣 */
+      const top = shots.find((x) => x.tag === "top");
+      /* 依 AI 回報的位置，把案號那一行裁出來；本機找不到那一行（只放了整個上緣）或沒有本機辨識時，用這張取代 */
+      if (top && (!rec.codeImg || rec.codeImgFb)) {
+        const b = j.code_box, ok = Array.isArray(b) && b.length === 4 && b.every((n) => typeof n === "number" && n >= 0 && n <= 1000) && b[2] > b[0] + 5 && b[3] > b[1] + 5 && (b[3] - b[1]) * top.c.width >= 2.2 * (b[2] - b[0]) * top.c.height;
+        if (ok) {
+          const x0 = Math.max(0, b[1] / 1000 - 0.03), x1 = Math.min(1, b[3] / 1000 + 0.03);
+          let y0 = b[0] / 1000 - 0.08, y1 = b[2] / 1000 + 0.08;
+          if (y1 - y0 < 0.24) { const m = (y0 + y1) / 2; y0 = m - 0.12; y1 = m + 0.12; }
+          y0 = Math.max(0, y0); y1 = Math.min(1, y1);
+          const c = cropC(top.c, x0, y0, x1, y1, Math.min(2, 800 / Math.max(1, top.c.width * (x1 - x0))));
+          rec.codeImg = url(c, 0.9); rec.codeImgFb = false; c.width = c.height = 1;
+        } else if (!rec.codeImg) rec.codeImg = url(top.c, 0.8);
+      }
+      /* 手寫承辦人：只放大 AI 指出的那一小塊，點圖片可切換成完整右下角 */
+      const sp = shots.find((x) => x.tag === "strip"), wb = j.who_box;
+      if (sp && Array.isArray(wb) && wb.length === 4 && wb.every((n) => typeof n === "number" && n >= 0 && n <= 1000) && wb[2] > wb[0] + 5 && wb[3] > wb[1] + 5) {
+        let x0 = wb[1] / 1000 - 0.06, x1 = wb[3] / 1000 + 0.06, y0 = wb[0] / 1000 - 0.04, y1 = wb[2] / 1000 + 0.04;
+        if (x1 - x0 < 0.6) { const m = (x0 + x1) / 2; x0 = m - 0.3; x1 = m + 0.3; }
+        if (y1 - y0 < 0.12) { const m = (y0 + y1) / 2; y0 = m - 0.06; y1 = m + 0.06; }
+        x0 = Math.max(0, x0); x1 = Math.min(1, x1); y0 = Math.max(0, y0); y1 = Math.min(1, y1);
+        const c = cropC(sp.c, x0, y0, x1, y1, Math.min(2.5, 600 / Math.max(1, sp.c.width * (x1 - x0))));
+        if (c.width > 20 && c.height > 20 && inkRatio(c) >= 0.002) { rec.strip = url(c, 0.9); rec.showFull = false; }   /* 裁到空白處就不換圖，維持顯示完整右下角 */
+        c.width = c.height = 1;
+        await aiZoomWho(rec, j, sp.c, wb);
+      }
+      return j;
+    } finally { shots.forEach((x) => { x.c.width = x.c.height = 1; }); }
+  }
+
+  /* 承辦人：優先採 AI 回的全名；不在名單就用手寫字、候選去對名單，只有唯一符合才填 */
+  function rosterPick(pick, raw, cand) {
+    const fx = fixLoad()[fixNorm(raw)];
+    if (typeof fx === "string" && roster.includes(fx)) return { name: fx, maybe: [], learned: true };
+    const p = aiS(pick);
+    if (roster.includes(p)) return { name: p, maybe: [] };
+    const pool = [], add = (n) => { if (roster.includes(n) && !pool.includes(n)) pool.push(n); };
+    [p, aiS(raw)].forEach((q) => { q = q.replace(/\s+/g, ""); if (q) cands(q).forEach(add); });
+    (Array.isArray(cand) ? cand : []).forEach((n) => add(aiS(n).replace(/\s+/g, "")));
+    return { name: pool.length === 1 ? pool[0] : "", maybe: pool.slice(0, 4) };
+  }
+  function applyAi(rec, j) {
+    if (!j || typeof j !== "object" || Array.isArray(j)) throw new Error("AI 回傳的內容格式不對");
+    const T = rec.touched, fill = (rec.aiFilled = {}), done = [];
+    rec.aiMiss = ""; rec.aiMissS = ""; rec.aiErr = "";
+    const ty = aiS(j.type), wRaw = aiS(j.who_raw), wAll = aiS(j.who) + wRaw;
+    rec.aiWhoRaw = wRaw; rec.aiWho = aiS(j.who);
+    const sTr = aiS(j.sticky_transfer).replace(/移轉|轉往|轉至|警察局|分局/g, "").replace(/[\s「」"'“”○]/g, "").slice(0, 8);   /* 便條紙寫「移轉○○分局」 */
+    const sTrD = destFind(sTr) || (/^[\u4e00-\u9fff]{2,8}$/.test(sTr) ? sTr : "");
+    if (!T.type) {
+      if (sTrD) rec.type = "xfer";
+      else if (ty === "occ" || ty === "cap") rec.type = ty;
+      else if (ty === "xfer" && DESTS.some((d) => wAll.includes(d))) rec.type = "xfer";
+    }
+    const capLike = rec.type === "cap" || rec.type === "xfer";
+    /* E化案號：和本機辨識的結果比對，不同就挑格式疑點少的，並提醒核對 */
+    const stn = STN_LETTER[aiS(j.station_name).slice(0, 2)] || "";
+    const ac = aiS(j.code) ? fixCode(j.code) : null;
+    if (!T.code && ac) {
+      const had = rec.code.length === 15 ? rec.code : "";
+      let cand = ac.code, flags = ac.flags.slice(), soft = ac.soft || "", fromAi = true;
+      if (stn && cand[10] !== stn) {
+        const old = cand[10];
+        if (stnMayFix(old, stn)) { cand = cand.slice(0, 10) + stn + cand.slice(11); soft = "派出所代號依單子標題由 " + old + " 改成 " + stn + "。" + (soft ? " " + soft : ""); }
+        else flags.push("案號上的派出所代號是 " + old + "，但單子標題的派出所對應 " + stn + "（沒有自動改），請對照圖片");
+      }
+      if (!(had && had === cand)) {
+        if (had) {
+          /* 預設以 AI 為準：和本機辨識不同時一律採用 AI，本機讀到的列在提醒裡供核對 */
+          flags.push("AI 與本機辨識的結果不同（本機讀到 " + had + "）");
+        }
+        rec.code = cand; rec.codeFlags = flags;
+        rec.codeSoft = fromAi ? "AI 讀取，請核對。" + (soft ? " " + soft : "") : soft;
+        if (fromAi) { fill.code = true; done.push("案號"); }
+      }
+    }
+    /* 承辦人 */
+    if (rec.type === "xfer") {
+      if (!T.who) {
+        const d = sTrD || destFind(wAll);
+        if (d) { rec.who = d; fill.who = true; done.push("轉往分局"); }
+        else if (wRaw) rec.aiMiss = "AI 讀到「" + wRaw + "」，不是已知的分局，請自己輸入。";
+      }
+    } else if (!T.who) {
+      const p = rosterPick(j.who, wRaw, j.who_candidates);
+      if (p.name) { rec.who = p.name; fill.who = true; done.push(p.learned ? "承辦人（套用你之前的更正）" : "承辦人"); }
+      else rec.aiMiss = p.maybe.length ? "AI 認為可能是：" + p.maybe.join("、") + "（請對照圖片）" : wRaw ? "AI 讀到「" + wRaw + "」，但名單裡找不到。" : "";
+    }
+    /* 便條紙與實際承辦人 */
+    const sWho = aiS(j.sticky_who), sRaw = aiS(j.sticky_who_raw);
+    rec.aiSRaw = sRaw; rec.aiSWho = sWho;
+    if (!T.sticky && (j.has_sticky === true || j.has_sticky === "true" || sWho) && !rec.sticky) rec.sticky = true;
+    if (rec.sticky && !T.realWho && (sWho || sRaw)) {
+      const p = rosterPick(sWho, sRaw, j.sticky_candidates);
+      if (p.name) { rec.realWho = p.name; fill.realWho = true; done.push(p.learned ? "實際承辦人（套用你之前的更正）" : "實際承辦人"); }
+      else rec.aiMissS = p.maybe.length ? "便條紙：AI 認為可能是 " + p.maybe.join("、") + "（請對照圖片）" : "便條紙：AI 讀到「" + sRaw + "」，但名單裡找不到。";
+    }
+    /* 案類、文號、日期 */
+    const cat = aiS(j.cat) ? parseCat("觸犯法條：" + aiS(j.cat)) : "";
+    if (cat && !T.cat) { rec.cat = cat; rec.catFlag = capLike ? "AI 讀取，請核對" : ""; if (capLike) { fill.cat = true; done.push("案類"); } }
+    const dn = parseDoc(aiS(j.doc_no));
+    if (dn && !T.docNo) {
+      if (rec.docNo === dn) rec.docFlag = "";
+      else {
+        const old = rec.docNo; rec.docNo = dn;
+        rec.docFlag = !capLike ? "" : old ? "AI 與本機辨識不同（本機讀到 " + old + "），請對照圖片" : "AI 讀取，請核對";
+        if (capLike) { fill.docNo = true; done.push("文號"); }
+      }
+    }
+    const ad = parseDate(aiS(j.date));
+    if (ad && !T.date && !rec.nameDate && !rec.ocrDate) rec.ocrDate = ad;
+    const fbm = Array.from(new Set((rec.aiModels || []).filter((m) => m && m !== AI.model))), fbNote = fbm.length ? "　由備援模型 " + fbm.join("、") + " 讀取，請特別留意核對" : "";
+    const note = (aiS(j.note) + (sTrD && !DESTS.includes(sTrD) ? "　便條紙的分局「" + sTrD + "」不在已知名單，請對照圖片確認" : "") + (j._zoom ? "　" + j._zoom : "") + fbNote).slice(0, 220);
+    rec.aiFlag = done.length ? "AI 已填入：" + done.join("、") + "，請核對" + (note ? "（" + note + "）" : "")
+      : (rec.aiMiss || rec.aiMissS) ? "AI 無法確定承辦人，請核對" : note ? "AI 備註：" + note : "";
+    rec.aiDone = true;
+  }
+  function aiFail(rec, e) {
+    const m = e && e.message ? e.message : String(e);
+    if (m === "已停止") return;
+    aiStat.err++; rec.aiErr = "AI：" + m;
+    if (e && e.fatal) { aiFatal = m; show("AI 已暫停：" + m, "warn"); }
+    aiUi();
+  }
+  /* 重新讀這一頁（重新轉成圖片再送出） */
+  async function aiRerun(rec) {
+    const full = await renderFull(rec);
+    try {
+      const st = findSticky(full), bt = analyzeBottom(full);
+      cleanPage(full);
+      applyAi(rec, await aiRead(rec, full, st, bt));
+      aiStat.ok++;
+    } finally { full.width = full.height = 1; }
+  }
+  async function aiAllRun() {
+    if (aiBusy || ocrRunning) { show("目前正在處理，等它跑完再按。", "warn"); return; }
+    if (!aiReady()) { show("請先勾選「啟用 AI 讀取」並貼上金鑰。", "warn"); return; }
+    const todo = pages.filter((r) => r.status === "ok" && !r.aiDone && !r.skip);
+    if (!todo.length) { show("沒有需要 AI 讀取的頁面（都已讀過、略過，或還沒辨識完）。"); return; }
+    aiBusy = true; aiStop = false; hide();
+    $("#aiStop").hidden = false; $("#aiAll").disabled = true; $("#progBar").hidden = false; $("#prog").style.width = "0%";
+    let n = 0;
+    for (const r of todo) {
+      if (aiStop || !aiReady()) break;
+      $("#progTxt").textContent = "AI 讀取中 " + (n + 1) + " / " + todo.length + " 頁…";
+      try { await aiRerun(r); } catch (e) { aiFail(r, e); }
+      n++; $("#prog").style.width = Math.round(n / todo.length * 100) + "%";
+      aiUi(); if (pages[cur] === r) renderForm(); else renderTable();
+      await tick();
+    }
+    fixFileDates();
+    $("#progTxt").textContent = (aiStop ? "AI 已停止，" : "AI 讀取完成，") + "已處理 " + n + " / " + todo.length + " 頁。請逐頁核對標黃的欄位。";
+    aiBusy = false; $("#aiStop").hidden = true; $("#aiAll").disabled = false;
+    renderForm();
+  }
+  $("#aiAll").addEventListener("click", aiAllRun);
+  $("#aiStop").addEventListener("click", () => { aiStop = true; });
+  $("#aiUseClear").addEventListener("click", () => { lsSet(KEY_USE, "{}"); useUi(); });
+  $("#aiClear").addEventListener("click", () => { $("#aiKey").value = ""; aiSave(); });
+  $("#aiFixClear").addEventListener("click", () => { const n = Object.keys(fixLoad()).length; lsSet(KEY_FIX, "{}"); $("#aiInfo").textContent = "已清除記住的更正（原有 " + n + " 筆）。"; });
+  /* 從文字檔載入金鑰：只讀檔案第一個非空白行，不顯示內容，載入後照原流程存進這台瀏覽器 */
+  $("#aiLoadKey").addEventListener("click", () => $("#aiKeyFile").click());
+  $("#aiKeyFile").addEventListener("change", async (e) => {
+    const f = e.target.files && e.target.files[0]; e.target.value = ""; if (!f) return;
+    const info = $("#aiInfo");
+    try {
+      if (f.size > 10240) throw new Error("檔案太大，不像是金鑰檔");
+      const line = (await f.text()).replace(/^\uFEFF/, "").split(/\r?\n/).map((x) => x.trim()).find((x) => x) || "";
+      const key = line.replace(/^[A-Za-z_ ]+\s*[=:]\s*/, "").replace(/^["']|["']$/g, "").trim();
+      if (!/^[\x21-\x7E]{20,}$/.test(key)) throw new Error("檔案內容看起來不是金鑰（應為一行、不含空白或中文）");
+      $("#aiKey").value = key; aiSave();
+      info.textContent = "已從「" + f.name + "」載入金鑰（共 " + key.length + " 個字元），已存在這台電腦的瀏覽器。可以按「測試連線」確認。";
+    } catch (err) { info.textContent = "無法載入金鑰：" + (err && err.message ? err.message : err); }
+  });
+  $("#aiTest").addEventListener("click", async () => {
+    aiSave(); aiStop = false;
+    if (AI.key.length < 10) { $("#aiInfo").textContent = "請先貼上 API 金鑰。"; return; }
+    $("#aiInfo").textContent = "測試中…"; const t0 = Date.now();
+    try {
+      aiJson(aiText(await callGemini([{ text: '請只回傳這個 JSON：{"ok": true}' }])));
+      $("#aiInfo").textContent = "連線成功（模型 " + AI.model + "，" + ((Date.now() - t0) / 1000).toFixed(1) + " 秒）。";
+    } catch (e) { $("#aiInfo").textContent = "連線失敗：" + (e && e.message ? e.message : e); if (e && e.fatal) aiFatal = e.message; }
+  });
+  $("#aiPage").addEventListener("click", async () => {
+    const r = pages[cur]; if (!r) return;
+    if (aiBusy) { show("AI 正在處理其他頁面，請稍候。", "warn"); return; }
+    if (r.status !== "ok" && r.status !== "err") { show("這一頁還沒處理完，請稍後再按。", "warn"); return; }
+    aiBusy = true; aiStop = false; $("#aiPage").disabled = true; $("#pgSt").textContent = "AI 讀取中…";
+    try { await aiRerun(r); fixFileDates(); } catch (e) { aiFail(r, e); }
+    aiBusy = false; $("#aiPage").disabled = false; aiUi(); if (pages[cur] === r) renderForm(); else renderTable();
+  });
+
+  /* 整頁文字與錯字檢查（按需要才用） */
+  const AI_TXT_PROMPT = '這是一頁掃描的公文（陳報單或刑案呈報單）。請做兩件事，只回傳一個 JSON 物件，不要其他文字：\n{\n "text": "逐字抄寫整頁所有印刷與手寫的文字，保持原本的順序與換行；看不清楚的字用 □ 代替；不要自行更正任何字",\n "issues": [{"original": "原文中有問題的詞句", "suggestion": "建議寫法", "reason": "一句話說明（錯字、漏字、贅字、標點或用詞）"}]\n}\nissues 只列你有把握的明顯錯字、漏字、贅字、標點或用詞錯誤；因掃描模糊而不確定的、人名與地名不要列；沒有就回空陣列。';
+  function renderAiText() {
+    const r = pages[cur], t = r && r.aiText, ul = $("#aiTxtIssues");
+    $("#aiTxt").hidden = !t; $("#aiTxtCopy").hidden = !t; $("#aiTxt").value = t ? t.text : ""; ul.innerHTML = "";
+    $("#aiTxtNote").textContent = !r ? "" : r.aiTextErr ? "失敗：" + r.aiTextErr : t ? (t.issues.length ? "AI 找到 " + t.issues.length + " 處可能的問題（也可能是掃描模糊造成，請自行判斷）：" : "AI 沒有發現明顯的錯字。") : "";
+    if (t) t.issues.forEach((x) => { const li = document.createElement("li"); li.textContent = "「" + x.original + "」→「" + (x.suggestion || "？") + "」" + (x.reason ? "　" + x.reason : ""); ul.appendChild(li); });
+  }
+  $("#aiTxtBtn").addEventListener("click", async () => {
+    const r = pages[cur]; if (!r) return;
+    if (aiBusy) { show("AI 正在處理其他頁面，請稍候。", "warn"); return; }
+    if (r.status !== "ok" && r.status !== "err") { show("這一頁還沒處理完，請稍後再按。", "warn"); return; }
+    aiBusy = true; aiStop = false; r.aiTextErr = ""; $("#aiTxtBtn").disabled = true; $("#aiTxtNote").textContent = "AI 讀取中…";
+    try {
+      const full = await renderFull(r); cleanPage(full);
+      const c = aiShot(full, 0, 0, 1, 1, 2000); full.width = full.height = 1;
+      let js; try { js = await callGemini([{ text: AI_TXT_PROMPT }, { inline_data: { mime_type: "image/jpeg", data: url(c, 0.88).split(",")[1] } }]); } finally { c.width = c.height = 1; }
+      aiStat.ok++; aiStat.tok += (js.usageMetadata && js.usageMetadata.totalTokenCount) || 0;
+      const j = aiJson(aiText(js));
+      r.aiText = { text: aiS(j.text), issues: (Array.isArray(j.issues) ? j.issues : []).map((x) => ({ original: aiS(x && x.original), suggestion: aiS(x && x.suggestion), reason: aiS(x && x.reason) })).filter((x) => x.original) };
+    } catch (e) {
+      const m = e && e.message ? e.message : String(e);
+      if (m !== "已停止") { aiStat.err++; r.aiTextErr = m; if (e && e.fatal) aiFatal = m; }
+    }
+    aiBusy = false; $("#aiTxtBtn").disabled = false; aiUi(); if (pages[cur] === r) renderAiText();
+  });
+  $("#aiTxtCopy").addEventListener("click", async () => {
+    const t = $("#aiTxt").value; if (!t) return;
+    try { await navigator.clipboard.writeText(t); }
+    catch (e) { $("#aiTxt").select(); try { document.execCommand("copy"); } catch (x) {} }
+    $("#aiTxtNote").textContent = "已複製文字。";
+  });
+  aiLoad();
+
+  async function runAll() {
+    if (ocrRunning) return;
+    ocrRunning = true; ocrStop = false; aiStop = false; $("#stopOcr").hidden = false; $("#progBar").hidden = false;
+    const aiOnlyMode = aiReady() && AI.only;   /* 只用 AI：不下載、不執行本機辨識引擎 */
+    let ocrOk = !aiOnlyMode;
+    if (!aiOnlyMode) {
+      try { await ensureOcr(); } catch (e) { ocrOk = false; worker = null; show("無法載入辨識引擎（" + (e && e.message ? e.message : e) + "）。仍可手動輸入每一頁，圖片、便條紙偵測和匯出都能用。", "warn"); }
+    }
+    const total = pages.length; let done = 0;
+    for (let i = 0; i < pages.length; i++) {
+      if (ocrStop) break;
+      const rec = pages[i]; if (rec.status === "ok") { done++; continue; }
+      $("#progTxt").textContent = (aiOnlyMode ? "AI 讀取中 " : ocrOk ? "辨識中 " : "處理中 ") + (i + 1) + " / " + total + " 頁…（辨識進行時你可以先開始核對已完成的頁面）";
+      try { await processPage(rec); } catch (e) { rec.status = "err"; rec.err = "這一頁讀取失敗：" + (e && e.message ? e.message : e); }
+      done++; $("#prog").style.width = Math.round(done / total * 100) + "%";
+      refreshStatus(); if (i === cur) renderForm(); else renderTable();
+      if (cur < 0 && rec.status === "ok") go(i);
+      await tick();
+    }
+    fixFileDates();
+    $("#progTxt").textContent = ocrStop ? "已停止（已處理 " + done + " / " + total + " 頁）" : "辨識完成，共 " + total + " 頁。請逐頁核對標黃的欄位。";
+    ocrRunning = false; $("#stopOcr").hidden = true;
+    if (worker) { try { await worker.terminate(); } catch (e) {} worker = null; }
+    renderForm();
+  }
+  $("#stopOcr").addEventListener("click", () => { ocrStop = true; aiStop = true; });
+
+  /* ---------- 加入檔案 ---------- */
+  async function addPdfs(list) {
+    const fs = Array.from(list).filter((f) => /\.pdf$/i.test(f.name) || f.type === "application/pdf");
+    if (!fs.length) { show("沒有找到 PDF 檔案。", "err"); return; }
+    hide();
+    for (const f of fs) {
+      try {
+        const doc = await pdfjsLib.getDocument({ data: new Uint8Array(await f.arrayBuffer()), isEvalSupported: false }).promise;
+        docs.push(doc); const fi = docs.length - 1;
+        for (let n = 1; n <= doc.numPages; n++) pages.push(mkRec(fi, n, f.name));
+      } catch (e) { show("「" + f.name + "」無法開啟，可能已加密或損毀。", "err"); }
+    }
+    $("#fileInfo").textContent = "已加入 " + pages.length + " 頁"; aiUi();
+    { const first = $("#work").hidden; $("#work").hidden = false; $("#tblBox").hidden = false; if (first) $("#work").scrollIntoView({ block: "start" }); }
+    renderTable(); runAll();
+  }
+  const drop = $("#drop");
+  drop.addEventListener("click", () => $("#pdfIn").click());
+  drop.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); $("#pdfIn").click(); } });
+  $("#pdfIn").addEventListener("change", function () { const l = Array.from(this.files); this.value = ""; addPdfs(l); });
+  const ov = $("#dropOv"); let depth = 0;
+  const hasFiles = (e) => e.dataTransfer && Array.prototype.indexOf.call(e.dataTransfer.types || [], "Files") !== -1;
+  const endOver = () => { depth = 0; ov.classList.remove("show"); drop.classList.remove("over"); };
+  window.addEventListener("dragenter", (e) => { if (!hasFiles(e)) return; e.preventDefault(); depth++; ov.classList.add("show"); drop.classList.add("over"); });
+  window.addEventListener("dragover", (e) => { if (hasFiles(e)) e.preventDefault(); });
+  window.addEventListener("dragleave", (e) => { if (!hasFiles(e)) return; depth = Math.max(0, depth - 1); if (!depth) endOver(); });
+  window.addEventListener("drop", (e) => { endOver(); if (!hasFiles(e)) return; e.preventDefault(); addPdfs(e.dataTransfer.files); });
+  /* ================= 表單 ================= */
+  const F = { occNo: $("#occNo"), code: $("#code"), who: $("#who"), date: $("#date"), caseNo: $("#caseNo"), realWho: $("#realWho"), cat: $("#cat"), docNo: $("#docNo") };
+  function setImg(el, src) { if (src) { el.src = src; el.hidden = false; } else { el.removeAttribute("src"); el.hidden = true; } }
+  function refreshStatus() {
+    const r = pages[cur]; if (!r) return;
+    $("#pgSt").textContent = r.status === "wait" ? "等待辨識…" : r.status === "busy" ? "辨識中…" : r.status === "err" ? r.err : [r.err, r.aiErr, r.aiFlag].filter(Boolean).join("；");
+  }
+  function refreshWho() {
+    const r = pages[cur]; if (!r) return;
+    chips($("#whoChips"), F.who.value, "who"); chips($("#realChips"), F.realWho.value, "realWho");
+    F.who.setAttribute("list", r.type === "xfer" ? "destList" : "");
+    const ok = !r.who || roster.includes(r.who) || r.type === "xfer";
+    const aiW = !!(r.aiFilled && r.aiFilled.who && !r.touched.who);
+    $("#fWho").classList.toggle("bad", !!r.who && !ok); $("#fWho").classList.toggle("uncertain", aiW || (!r.who && !!r.aiMiss));
+    let wn = r.type === "xfer" ? "移轉：這欄直接填轉往的分局名稱（例如 中和），不用對名單。" : !roster.length ? "還沒載入名單，只能手動輸入全名。" : r.who ? (ok ? "" : "這個名字不在名單裡。") : "";
+    if (!wn && aiW) wn = "AI 讀取，請對照上方圖片核對。";
+    if (!wn && !r.who && r.aiMiss) wn = r.aiMiss;
+    $("#whoNote").textContent = wn;
+  }
+  function chips(box, q, key) {
+    const r = pages[cur]; box.innerHTML = "";
+    const c = cands(q); if (!c.length || roster.includes(String(q).trim())) return;
+    c.slice(0, 8).forEach((n) => { const b = document.createElement("button"); b.type = "button"; b.textContent = n; b.addEventListener("click", () => { r[key] = n; r.touched[key] = true; F[key].value = n; refreshWho(); renderTable(); F[key].focus(); }); box.appendChild(b); });
+  }
+  function renderForm() {
+    const r = pages[cur]; if (!r) return;
+    $("#pageImg").src = r.img || ""; $("#pgNo").textContent = (cur + 1) + " / " + pages.length + "　" + r.src;
+    document.querySelectorAll("input[name=type]").forEach((x) => (x.checked = x.value === r.type));
+    $("#codeLb").textContent = r.type === "cap" ? "E化案號（案件編號）" : "E化案號";
+    F.code.value = r.code; setImg($("#codeImg"), r.codeImg);
+    const stn = r.code.length === 15 ? STN[r.code.slice(10, 12)] : ""; $("#codeStn").textContent = stn ? stn + "派出所" : "";
+    const fl = r.codeFlags || []; $("#fCode").classList.toggle("uncertain", fl.length > 0 || (r.status === "ok" && !r.code) || !!(r.aiFilled && r.aiFilled.code));
+    const nlw = notInList(r.code);
+    $("#codeNote").textContent = (fl.length ? "請對照上方圖片核對：" + fl.join("、") : r.code ? (r.codeSoft || "已依案號規則校正。") : "") + (nlw ? "　⚠ 這個案號不在你貼的案件列表中，請再對照原件確認。" : "");
+    if (nlw) $("#fCode").classList.add("uncertain");
+    F.who.value = r.who; setImg($("#stripImg"), r.showFull && r.stripFull ? r.stripFull : r.strip);
+    { const h = $("#stripHint"), sw = r.stripFull && r.strip !== r.stripFull; h.hidden = !sw; h.textContent = r.showFull ? "目前是完整右下角，點圖片縮回手寫處。" : "已放大到手寫處；點圖片可看完整右下角。"; } $("#whoHint").value = r.whoHint || "";
+    F.date.value = r.date; setImg($("#dateImg"), r.dateImg);
+    $("#fDate").classList.toggle("uncertain", !!r.dateFlag); $("#dateNote").textContent = r.dateFlag || (r.nameDate && r.date === r.nameDate ? "取自檔名" : "");
+    $("#sticky").checked = r.sticky; $("#stickyBox").hidden = !r.sticky; setImg($("#stickyImg"), r.sticky ? r.stickyImg : "");
+    F.caseNo.value = r.caseNo; F.occNo.value = r.occNo; F.realWho.value = r.realWho;
+    $("#realHint").textContent = r.sticky ? (r.aiMissS || "") : "沒有便條紙或移轉他轄：實際承辦人會填成上面的承辦人。";
+    $("#capBox").hidden = r.type !== "cap" && r.type !== "xfer"; F.cat.value = r.cat; $("#fCat").classList.toggle("uncertain", !!r.catFlag); $("#catNote").textContent = r.catFlag || ""; F.docNo.value = r.docNo; setImg($("#docImg"), r.numImg);
+    $("#fDoc").classList.toggle("uncertain", !!r.docFlag); $("#docNote").textContent = r.docFlag || "";
+    $("#skip").checked = r.skip;
+    $("#prev").disabled = cur <= 0; $("#next").disabled = cur >= pages.length - 1;
+    refreshStatus(); refreshWho(); renderTable(); renderAiText(); aiVis();
+  }
+  const isUnc = (r) => !r.skip && ((r.codeFlags && r.codeFlags.length) || r.dateFlag || r.docFlag || r.catFlag || r.aiFlag);
+  function markOk(r) {
+    if (!r) return;
+    r.codeFlags = []; r.codeSoft = ""; r.dateFlag = ""; r.docFlag = ""; r.catFlag = ""; r.verified = true;
+    r.aiFlag = ""; r.aiFilled = {}; r.aiMiss = ""; r.aiMissS = "";
+  }
+  function goWarn() {
+    for (let k = 1; k <= pages.length; k++) { const i = (cur + k) % pages.length; if (isUnc(pages[i])) { go(i); return; } }
+    $("#msg").textContent = "沒有需要核對（⚠）的頁面了。";
+  }
+  function go(i) { if (i < 0 || i >= pages.length) return; cur = i; $("#viewer").classList.remove("zoom"); renderForm(); $("#viewer").scrollTop = 0; $("#panel").scrollTop = 0; }
+  $("#prev").addEventListener("click", () => go(cur - 1));
+  $("#next").addEventListener("click", () => go(cur + 1));
+  $("#nextWarn").addEventListener("click", goWarn);
+  $("#okBtn").addEventListener("click", () => { markOk(pages[cur]); renderForm(); });
+  document.addEventListener("keydown", (e) => { if (e.key === "Enter" && (e.ctrlKey || e.metaKey) && pages[cur]) { e.preventDefault(); markOk(pages[cur]); go(cur + 1); renderTable(); } });
+  document.addEventListener("keydown", (e) => { if (e.altKey && e.key === "ArrowRight") { e.preventDefault(); go(cur + 1); } else if (e.altKey && e.key === "ArrowLeft") { e.preventDefault(); go(cur - 1); } });
+  $("#viewer").addEventListener("click", () => $("#viewer").classList.toggle("zoom"));
+
+  function bind(key, after) {
+    F[key].addEventListener("input", () => { const r = pages[cur]; if (!r) return; r[key] = F[key].value; r.touched[key] = true; if (after) after(r); refreshWho(); renderTable(); });
+  }
+  bind("code", (r) => { r.code = F.code.value.toUpperCase().replace(/[^A-Z0-9]/g, ""); r.codeFlags = []; r.codeSoft = ""; $("#fCode").classList.remove("uncertain"); $("#codeNote").textContent = ""; const s = r.code.length === 15 ? STN[r.code.slice(10, 12)] : ""; $("#codeStn").textContent = s ? s + "派出所" : ""; });
+  bind("who"); bind("realWho");
+  /* 我看這個字是…：把看出來的字告訴 AI，只重讀這一頁（承辦人欄位會重新由 AI 判斷，結果一樣標 ⚠ 請核對） */
+  $("#whoHint").addEventListener("input", () => { const r = pages[cur]; if (r) r.whoHint = $("#whoHint").value.replace(/[\s「」"'“”]/g, "").slice(0, 20); });
+  $("#whoHintBtn").addEventListener("click", () => {
+    const r = pages[cur]; if (!r) return;
+    if (!r.whoHint) { show("請先在格子裡打上你看到的字。", "warn"); return; }
+    r.touched.who = false; $("#aiPage").click();
+  });
+  $("#whoHint").addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); $("#whoHintBtn").click(); } });
+  $("#stripImg").addEventListener("click", (e) => {
+    const rr = pages[cur];
+    if (rr && rr.stripFull && rr.strip !== rr.stripFull) { rr.showFull = !rr.showFull; renderForm(); return; }
+    const s = e.target.style; const big = s.maxHeight === "900px"; s.maxHeight = big ? "" : "900px"; s.cursor = big ? "zoom-in" : "zoom-out";
+  });
+  bind("date", (r) => { r.dateFlag = ""; $("#fDate").classList.remove("uncertain"); $("#dateNote").textContent = ""; });
+  bind("caseNo", (r) => { r.caseNo = F.caseNo.value.trim(); });
+  bind("occNo", (r) => { r.occNo = F.occNo.value.toUpperCase().replace(/[^A-Z0-9]/g, ""); });
+  bind("cat", (r) => { r.catFlag = ""; $("#fCat").classList.remove("uncertain"); $("#catNote").textContent = ""; });
+  $("#catOcr").addEventListener("click", () => { const r = pages[cur]; if (r) { r.touched.cat = false; runCat(r); } });
+  bind("docNo", (r) => { r.docNo = F.docNo.value.replace(/\D/g, ""); r.docFlag = ""; $("#fDoc").classList.remove("uncertain"); $("#docNote").textContent = ""; });
+  F.date.addEventListener("blur", () => { const r = pages[cur]; if (!r) return; const d = normDate(F.date.value); if (d) { r.date = d; F.date.value = d; renderTable(); } });
+  document.querySelectorAll("input[name=type]").forEach((x) => x.addEventListener("change", () => { const r = pages[cur]; if (!r) return; r.type = x.value; r.touched.type = true; if (r.type === "xfer") { if (roster.includes(r.who)) r.who = ""; } else if (!roster.includes(r.who)) r.who = ""; F.who.setAttribute("list", r.type === "xfer" ? "destList" : ""); renderForm(); if ((r.type === "cap" || r.type === "xfer") && !r.cat && !r.touched.cat && r.status === "ok") runCat(r); }));
+  $("#sticky").addEventListener("change", () => { const r = pages[cur]; r.sticky = $("#sticky").checked; r.touched.sticky = true; renderForm(); });
+  $("#skip").addEventListener("change", () => { pages[cur].skip = $("#skip").checked; renderTable(); });
+  function whoEnter(key, next) {
+    F[key].addEventListener("keydown", (e) => {
+      if (e.key !== "Enter") return; e.preventDefault(); const r = pages[cur], c = cands(F[key].value);
+      if (key === "who" && r.type === "xfer") { if (r.who.trim()) { markOk(r); go(cur + 1); renderTable(); } return; }
+      if (roster.includes(r[key])) { if (next) { markOk(r); go(cur + 1); renderTable(); } return; }
+      if (c.length === 1) { r[key] = c[0]; r.touched[key] = true; F[key].value = c[0]; refreshWho(); renderTable(); }
+      else if (!c.length && F[key].value.trim()) { $("#whoNote").textContent = key === "who" ? "名單裡找不到含有這個字的人。" : ""; }
+    });
+  }
+  whoEnter("who", true); whoEnter("realWho", false);
+
+  /* ================= 表格與匯出 ================= */
+  function derive(r) {
+    const cap = r.type === "cap" || r.type === "xfer", real = r.sticky && r.realWho ? r.realWho : r.who;
+    return [r.who, r.code, r.occNo, r.caseNo, real, cap ? r.cat : "", cap ? r.docNo : "", r.date];
+  }
+  function renderTable() {
+    const tb = $("#tbl tbody"); if (!tb) return;
+    let miss = 0, lnMiss = 0;
+    tb.innerHTML = pages.map((r, i) => {
+      const v = derive(r), cap = r.type === "cap" || r.type === "xfer";
+      const need = [!v[0], !v[1], false, false, !v[4], cap && !v[5], cap && !v[6], !v[7]];
+      const mm = r.skip ? 0 : need.filter(Boolean).length; miss += mm;
+      const nl = !r.skip && notInList(v[1]); if (nl) lnMiss++;
+      const td = (j, t) => '<td class="' + (!r.skip && need[j] ? "miss" : "") + (j === 1 && nl ? " nolist" : "") + '"' + (j === 1 && nl ? ' title="這個案號不在你貼的案件列表中"' : "") + '>' + (esc(t || "") || (!r.skip && need[j] ? "缺" : "")) + (j === 1 && nl ? " ⚠不在列表" : "") + "</td>";
+      const unc = (r.codeFlags && r.codeFlags.length) || r.dateFlag || r.docFlag || r.catFlag || r.aiFlag;
+      return '<tr data-i="' + i + '" class="' + (i === cur ? "cur " : "") + (r.skip ? "skip" : "") + '"><td>' + (i + 1) + "</td><td>" + esc(r.src) + (r.status === "ok" ? "" : r.status === "busy" ? "（辨識中）" : r.status === "err" ? "（失敗）" : "（等待）") + (unc ? " ⚠" : "") + "</td><td>" + (r.type === "xfer" ? "移轉" : cap ? "破獲" : "發生") + "</td>" +
+        td(0, v[0]) + td(1, v[1]) + td(2, v[2]) + td(3, v[3]) + td(4, v[4]) + td(5, v[5]) + td(6, v[6]) + td(7, v[7]) + "</tr>";
+    }).join("");
+    const unc = pages.filter(isUnc).length;
+    $("#tblHint").textContent = pages.length ? (miss ? "還有 " + miss + " 個必填欄位是空的（紅字「缺」）。" : "必填欄位都已填寫。") + (unc ? " ⚠ 表示有 " + unc + " 頁的案號、日期或文號是自動猜的，建議逐頁核對。" : "") + (lnMiss ? " 有 " + lnMiss + " 筆案號不在你貼的案件列表中（標「⚠不在列表」），可能是讀錯，也可能那件本來就不在列表上，請對照原件確認；案號不會被自動更動。" : "") : "";
+    const rr = tb.querySelector("tr.cur"), box = rr && rr.closest(".tw");
+    if (box) { const top = rr.offsetTop - 28, bot = rr.offsetTop + rr.offsetHeight; if (top < box.scrollTop) box.scrollTop = top; else if (bot > box.scrollTop + box.clientHeight) box.scrollTop = bot - box.clientHeight + 4; }
+  }
+  $("#tbl tbody").addEventListener("click", (e) => { const tr = e.target.closest("tr"); if (tr) go(+tr.dataset.i); });
+  const HEAD = ["承辦人", "E化案號", "發生案號", "發生文號", "實際承辦人", "案類", "文號", "收文日期"];
+  const rowsOut = () => pages.filter((r) => !r.skip).map(derive);
+  function remember() {
+    learnFixes();
+    try { const set = new Set(JSON.parse(lsGet(KEY_C) || "[]")); pages.forEach((r) => { if ((r.type === "cap" || r.type === "xfer") && r.cat) set.add(r.cat); }); lsSet(KEY_C, JSON.stringify(Array.from(set).slice(-60))); fillCats(); } catch (e) {}
+  }
+  function fillCats() { try { $("#catList").innerHTML = JSON.parse(lsGet(KEY_C) || "[]").map((c) => '<option value="' + esc(c) + '">').join(""); } catch (e) {} }
+  fillCats();
+  function incomplete() { const n = pages.filter((r) => r.status !== "ok" && !r.skip).length; return n ? "還有 " + n + " 頁沒有辨識完成。" : ""; }
+  $("#copyBtn").addEventListener("click", async () => {
+    remember();
+    const tsv = rowsOut().map((r) => r.map((c) => String(c).replace(/[\t\r\n]+/g, " ")).join("\t")).join("\n");
+    try { await navigator.clipboard.writeText(tsv); }
+    catch (e) { const t = document.createElement("textarea"); t.value = tsv; document.body.appendChild(t); t.select(); try { document.execCommand("copy"); } catch (x) {} t.remove(); }
+    show("已複製 " + rowsOut().length + " 列（不含標題）。到 Excel 登記表的第一個空白列的 A 欄貼上。" + incomplete(), incomplete() ? "warn" : "");
+  });
+  function csvEsc(s) { s = String(s); return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; }
+  function dl(blob, name) { const u = URL.createObjectURL(blob), a = document.createElement("a"); a.href = u; a.download = name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(u), 20000); }
+  $("#csvBtn").addEventListener("click", () => {
+    remember();
+    const t = [HEAD].concat(rowsOut()).map((r) => r.map(csvEsc).join(",")).join("\r\n");
+    dl(new Blob(["﻿" + t], { type: "text/csv;charset=utf-8" }), "陳報單登記.csv");
+  });
+  $("#xlsxBtn").addEventListener("click", async () => {
+    remember();
+    try {
+      if (!window.XLSX) await loadScript("https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js");
+      const aoa = [HEAD].concat(rowsOut().map((r) => r.map((c, j) => {
+        if (j === 7 && /^\d{4}\/\d\d\/\d\d$/.test(c)) { const p = c.split("/"); return new Date(Date.UTC(+p[0], +p[1] - 1, +p[2])); }
+        if ((j === 3 || j === 6) && /^\d+$/.test(c)) return +c;
+        return c;
+      })));
+      const ws = XLSX.utils.aoa_to_sheet(aoa, { cellDates: true });
+      for (let i = 1; i < aoa.length; i++) { const c = ws[XLSX.utils.encode_cell({ r: i, c: 7 })]; if (c && c.t === "d") c.z = "yyyy/mm/dd"; }
+      ws["!cols"] = [10, 18, 18, 12, 12, 12, 12, 12].map((w) => ({ wch: w }));
+      const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "登記"); XLSX.writeFile(wb, "陳報單登記.xlsx");
+    } catch (e) { show("無法產生 Excel（" + (e && e.message ? e.message : e) + "），請改用「複製」或「下載 CSV」。", "warn"); }
+  });
+  /* ===== 4. 重複比對 ===== */
+  (function () {
+
+  const KEY = "pdf-register-dup-v1", LIMIT = 3000;
+  const NAMES = { a: "A 表：目前這頁登記的資料", b: "B 表：要拿來比對的表格（其他網頁或 Excel）" };
+  const HINTS = { a: "從別的網頁複製表格，貼在這裡。", b: "貼上登記表「複製（貼到 Excel）」的內容，或選你匯出的 Excel／CSV 檔。" };
+  const side = { a: mkSide(), b: mkSide() };
+  function mkSide() { return { live: false, rows: [], col: 0, header: false, userCol: false, userHdr: false, auto: true, noId: false }; }
+
+  /* ---------- 畫面 ---------- */
+  $("#dcPanels").innerHTML =
+    '<div class="panel" id="aPanel"><h3>' + NAMES.a + '</h3><p class="hint">自動帶入上面「3. 檢查與匯出」表格裡的內容（不含已略過的頁），你修改後會跟著更新。</p>' +
+    '<div class="row"><button type="button" id="aReload">重新帶入</button></div>' +
+    '<details id="aAdv" style="margin-top:8px"><summary class="mute" id="aSum">只比對 E化案號</summary><div class="cfg"><label class="f">要比對的欄位<select id="aCol"></select></label><input type="checkbox" id="aHdr" checked hidden></div></details>' +
+    '<p class="hint" id="aInfo"></p></div>' +
+    '<div class="panel" id="bPanel"><h3>' + NAMES.b + '</h3><p class="hint">從別的網頁複製表格貼在這裡，或選 Excel／CSV 檔。</p>' +
+    '<textarea id="bText" spellcheck="false" placeholder="在這裡按 Ctrl + V 貼上表格（可以直接從網頁或 Excel 複製）"></textarea>' +
+    '<div class="row"><button type="button" id="bPick">改選檔案…</button><button type="button" id="bClear">清除</button>' +
+    '<input type="file" id="bFile" accept=".xlsx,.csv,.tsv,.txt,.tab" hidden></div>' +
+    '<details id="bAdv" style="margin-top:8px"><summary class="mute" id="bSum">只比對案號（自動判斷）</summary><div class="cfg"><label class="f">案號在哪一欄<select id="bCol"></select></label>' +
+    '<label class="chk"><input type="checkbox" id="bHdr">第一列是標題列</label></div></details>' +
+    '<p class="hint" id="bInfo"></p></div>';
+
+  function show(t, err) { const m = $("#dcMsg"); m.textContent = t; m.className = "show" + (err ? " err" : ""); }
+  function hide() { $("#dcMsg").className = ""; }
+
+  /* ---------- 解析貼上的文字 ---------- */
+  const trimCell = (s) => s.replace(/^[\s 　]+|[\s 　]+$/g, "");
+  function parseText(t) {
+    t = t.replace(/^﻿/, "").replace(/\r\n?/g, "\n");
+    const head = t.split("\n").slice(0, 20).join("\n");
+    const d = /\t/.test(head) ? "\t" : /,/.test(head) ? "," : "";
+    const rows = []; let row = [], f = "", q = false;
+    for (let i = 0; i < t.length; i++) {
+      const ch = t[i];
+      if (q) { if (ch === '"') { if (t[i + 1] === '"') { f += '"'; i++; } else q = false; } else f += ch; continue; }
+      if (ch === '"' && f === "") { q = true; continue; }
+      if (d && ch === d) { row.push(f); f = ""; }
+      else if (ch === "\n") { row.push(f); rows.push(row); row = []; f = ""; }
+      else f += ch;
+    }
+    if (f !== "" || row.length) { row.push(f); rows.push(row); }
+    return cleanRows(rows);
+  }
+  function cleanRows(rows) {
+    rows = rows.map((r) => r.map((c) => trimCell(String(c == null ? "" : c))));
+    while (rows.length && rows[rows.length - 1].every((c) => c === "")) rows.pop();
+    const w = rows.reduce((m, r) => Math.max(m, r.length), 0);
+    rows.forEach((r) => { while (r.length < w) r.push(""); });
+    return rows;
+  }
+
+  /* ---------- 讀 xlsx（不需要任何函式庫） ---------- */
+  async function inflateRaw(u8) {
+    const stream = new Blob([u8]).stream().pipeThrough(new DecompressionStream("deflate-raw"));
+    return new Uint8Array(await new Response(stream).arrayBuffer());
+  }
+  async function unzip(buf) {
+    const dv = new DataView(buf), u8 = new Uint8Array(buf), dec = new TextDecoder();
+    let e = -1;
+    for (let i = buf.byteLength - 22; i >= Math.max(0, buf.byteLength - 65557); i--) if (dv.getUint32(i, true) === 0x06054b50) { e = i; break; }
+    if (e < 0) throw new Error("這不是有效的 xlsx 檔");
+    const n = dv.getUint16(e + 10, true); let p = dv.getUint32(e + 16, true); const files = {};
+    for (let k = 0; k < n; k++) {
+      if (dv.getUint32(p, true) !== 0x02014b50) break;
+      const nl = dv.getUint16(p + 28, true), el = dv.getUint16(p + 30, true), cl = dv.getUint16(p + 32, true);
+      files[dec.decode(u8.subarray(p + 46, p + 46 + nl))] = { method: dv.getUint16(p + 10, true), csize: dv.getUint32(p + 20, true), off: dv.getUint32(p + 42, true) };
+      p += 46 + nl + el + cl;
+    }
+    return {
+      names: Object.keys(files),
+      async get(name) {
+        const f = files[name]; if (!f) return null;
+        const s = f.off + 30 + dv.getUint16(f.off + 26, true) + dv.getUint16(f.off + 28, true), data = u8.subarray(s, s + f.csize);
+        return dec.decode(f.method === 0 ? data : await inflateRaw(data));
+      }
+    };
+  }
+  async function readXlsx(buf) {
+    if (typeof DecompressionStream === "undefined") throw new Error("這個瀏覽器不能直接讀 xlsx，請改用複製貼上，或在 Excel 另存成 CSV");
+    const z = await unzip(buf), xml = (s) => new DOMParser().parseFromString(s, "application/xml");
+    const strs = [], sst = await z.get("xl/sharedStrings.xml");
+    if (sst) xml(sst).querySelectorAll("si").forEach((si) => strs.push(Array.from(si.getElementsByTagName("t")).filter((t) => t.parentNode.nodeName !== "rPh").map((t) => t.textContent).join("")));
+    let path = "";
+    const wb = await z.get("xl/workbook.xml"), rels = await z.get("xl/_rels/workbook.xml.rels");
+    if (wb && rels) {
+      const sh = xml(wb).querySelector("sheet");
+      const rid = sh && (sh.getAttribute("r:id") || sh.getAttributeNS("http://schemas.openxmlformats.org/officeDocument/2006/relationships", "id"));
+      const rel = rid && Array.from(xml(rels).querySelectorAll("Relationship")).find((r) => r.getAttribute("Id") === rid);
+      if (rel) { const t = rel.getAttribute("Target") || ""; path = t.charAt(0) === "/" ? t.slice(1) : "xl/" + t.replace(/^\.\//, ""); }
+    }
+    if (!path || z.names.indexOf(path) < 0) path = z.names.filter((n) => /^xl\/worksheets\/sheet\d+\.xml$/.test(n)).sort()[0];
+    const sx = path && await z.get(path);
+    if (!sx) throw new Error("找不到工作表");
+    const rows = [];
+    xml(sx).querySelectorAll("sheetData > row > c").forEach((c) => {
+      const m = /^([A-Z]+)(\d+)$/.exec(c.getAttribute("r") || ""); if (!m) return;
+      let col = 0; for (const ch of m[1]) col = col * 26 + ch.charCodeAt(0) - 64;
+      col--; const r = +m[2] - 1, t = c.getAttribute("t"), v = c.querySelector("v");
+      let val = "";
+      if (t === "s") val = strs[+(v ? v.textContent : -1)] || "";
+      else if (t === "inlineStr") val = Array.from(c.getElementsByTagName("t")).map((x) => x.textContent).join("");
+      else if (v) val = v.textContent;
+      (rows[r] = rows[r] || [])[col] = val.replace(/[\t\r\n]+/g, " ");
+    });
+    for (let i = 0; i < rows.length; i++) { rows[i] = rows[i] || []; for (let j = 0; j < rows[i].length; j++) if (rows[i][j] === undefined) rows[i][j] = ""; }
+    return cleanRows(rows);
+  }
+  function decodeText(buf) {
+    try { return new TextDecoder("utf-8", { fatal: true }).decode(buf); }
+    catch (e) { try { return new TextDecoder("big5").decode(buf); } catch (x) { return new TextDecoder().decode(buf); } }
+  }
+  async function loadFile(k, file) {
+    hide();
+    try {
+      const buf = await file.arrayBuffer();
+      if (/\.xlsx$/i.test(file.name) || (new Uint8Array(buf, 0, 2)[0] === 0x50 && new Uint8Array(buf, 0, 2)[1] === 0x4b)) {
+        const rows = await readXlsx(buf);
+        $("#" + k + "Text").value = rows.map((r) => r.join("\t")).join("\n");
+        setRows(k, rows, true);
+      } else if (/\.xls$/i.test(file.name)) {
+        throw new Error("舊版 .xls 不支援，請在 Excel 另存成 .xlsx 或 CSV，或直接複製貼上");
+      } else {
+        const text = decodeText(buf);
+        $("#" + k + "Text").value = text.replace(/^﻿/, "");
+        setRows(k, parseText(text), true);
+      }
+    } catch (e) { show("讀取「" + file.name + "」失敗：" + (e && e.message ? e.message : e), true); }
+  }
+
+  /* ---------- 判斷哪一欄是案號 ---------- */
+  function looksId(v) { const s = String(v).toUpperCase().replace(/[\s\-_]/g, ""); return /^[A-Z0-9]{8,24}$/.test(s) && /\d/.test(s); }
+  function idScore(v) { const s = String(v).toUpperCase().replace(/[\s\-_]/g, ""); return looksId(v) ? (/[A-Z]/.test(s) ? 2 : 1) : 0; }
+  function autoCol(rows) {
+    const w = rows.length ? rows[0].length : 0; let best = 0, bs = 0;
+    for (let c = 0; c < w; c++) { let s = 0; rows.forEach((r) => { s += idScore(r[c]); }); if (s > bs) { bs = s; best = c; } }
+    return { col: best, found: bs > 0 };
+  }
+  function autoHeader(rows, col) {
+    if (rows.length < 2) return false;
+    const rest = rows.slice(1).filter((r) => looksId(r[col])).length;
+    return !looksId(rows[0][col]) && rest >= (rows.length - 1) * 0.5;
+  }
+  const start = (S) => (S.header ? 1 : 0);
+
+  function setRows(k, rows, fresh) {
+    const S = side[k]; S.rows = rows;
+    if (fresh) { S.userCol = false; S.userHdr = false; }
+    let w = rows.length ? rows[0].length : 0, a = autoCol(rows);
+    if (!S.live && a.found && fresh) {   /* 網頁複製常帶有標題文字：丟掉第一筆案號之前的雜訊，只保留真正的標題列 */
+      const f = rows.findIndex((r) => looksId(r[a.col]));
+      if (f > 0) { const hd = rows[f - 1], keep = hd.filter(Boolean).length >= Math.ceil(w / 2) ? [hd] : []; rows = keep.concat(rows.slice(f)); S.rows = rows; }
+    }
+    S.noId = !a.found;
+    if (!S.userCol || (S.col !== "all" && S.col >= w)) { S.col = a.col; S.auto = true; }
+    if (!S.userHdr) S.header = autoHeader(rows, S.col === "all" ? a.col : S.col);
+    buildSelect(k); refresh();
+  }
+  function buildSelect(k) {
+    const S = side[k], sel = $("#" + k + "Col"), w = S.rows.length ? S.rows[0].length : 0, o = [];
+    for (let c = 0; c < w; c++) {
+      let ex = S.header && S.rows[0][c] ? S.rows[0][c] : "";
+      if (!ex) { const r = S.rows.slice(start(S)).find((x) => x[c]); ex = r ? r[c] : "（空白）"; }
+      o.push('<option value="' + c + '">第 ' + (c + 1) + ' 欄：' + esc(ex.length > 22 ? ex.slice(0, 22) + "…" : ex) + "</option>");
+    }
+    if (w) o.push('<option value="all">所有欄位（整列任何一格相同就算重複）</option>');
+    sel.innerHTML = o.join("") || "<option>（還沒有資料）</option>";
+    sel.value = String(S.col); $("#" + k + "Hdr").checked = S.header; sel.disabled = !w; $("#" + k + "Hdr").disabled = !w;
+  }
+
+  /* ---------- 比對 ---------- */
+  const opt = { space: true, width: true, sym: false };
+  function readOpts() {
+    opt.space = $("#oSpace").checked; opt.width = $("#oWidth").checked; opt.sym = $("#oSym").checked;
+    try { localStorage.setItem(KEY, JSON.stringify(opt)); } catch (e) {}
+  }
+  function norm(v) {
+    let s = String(v);
+    if (opt.width) s = s.replace(/[！-～]/g, (c) => String.fromCharCode(c.charCodeAt(0) - 0xFEE0)).replace(/　/g, " ");
+    s = opt.space ? s.replace(/[\s ]+/g, "").toUpperCase() : s.replace(/^\s+|\s+$/g, "");
+    if (opt.sym) s = s.replace(/[-_.\/\\,:;'"()\[\]‐-―−－ー]/g, "");
+    return s;
+  }
+  const rowKeys = (S, row) => Array.from(new Set((S.col === "all" ? row : [row[S.col]]).map((v) => norm(v == null ? "" : v)).filter(Boolean)));
+  function buildMap(S) {
+    const m = new Map();
+    S.rows.forEach((row, i) => { if (i < start(S)) return; rowKeys(S, row).forEach((key) => { if (!m.has(key)) m.set(key, []); m.get(key).push(i); }); });
+    return m;
+  }
+  let res = { a: [], b: [] };
+  function compute() {
+    const maps = { a: buildMap(side.a), b: buildMap(side.b) };
+    ["a", "b"].forEach((k) => {
+      const S = side[k], o = k === "a" ? "b" : "a";
+      res[k] = S.rows.map((row, i) => {
+        if (i < start(S)) return null;
+        const ks = rowKeys(S, row), hit = [], other = new Set();
+        ks.forEach((key) => { const m = maps[o].get(key); if (m) { hit.push(key); m.forEach((x) => other.add(x)); } });
+        return { keys: ks, hit, dup: hit.length > 0, other: Array.from(other).sort((x, y) => x - y), self: ks.some((key) => maps[k].get(key).length > 1) };
+      });
+    });
+  }
+
+  /* ---------- 顯示結果 ---------- */
+  const dataRows = (k) => Math.max(0, side[k].rows.length - start(side[k]));
+  const dupN = (k) => res[k].filter((r) => r && r.dup).length;
+  function summary() {
+    const el = $("#sum"), na = dataRows("a"), nb = dataRows("b");
+    if (!na || !nb) { el.className = "sum"; el.textContent = "請先在上面貼上兩份資料（" + (na ? "A 表已讀入" : "A 表還沒有資料") + "，" + (nb ? "B 表已讀入" : "B 表還沒有資料") + "）。"; return; }
+    const set = new Set(); res.a.forEach((r) => { if (r) r.hit.forEach((x) => set.add(x)); });
+    const da = dupN("a"), db = dupN("b");
+    if (!da && !db) { el.className = "sum ok"; el.textContent = "沒有找到重複的案號。A 表 " + na + " 列，B 表 " + nb + " 列，兩邊的案號完全不同。"; return; }
+    el.className = "sum warn";
+    el.textContent = "找到 " + set.size + " 個兩邊都有的案號：A 表有 " + da + " 列重複（共 " + na + " 列），B 表有 " + db + " 列重複（共 " + nb + " 列）。重複的列已標成黃色。";
+  }
+  function renderSide(k) {
+    const box = $("#res" + k.toUpperCase()), S = side[k], R = res[k];
+    if (!S.rows.length) { box.innerHTML = ""; return; }
+    const only = $("#only").checked, w = S.rows[0].length, st = start(S), all = S.col === "all";
+    let h = '<div class="reshead"><h3>' + NAMES[k] + '：' + dataRows(k) + ' 列，重複 ' + dupN(k) + ' 列</h3><div class="btns">' +
+      '<button type="button" data-act="mark" data-k="' + k + '" title="一列對一列，可以貼在原表格旁邊的空白欄">複製「重複」標記欄</button>' +
+      '<button type="button" data-act="keys" data-k="' + k + '">複製重複的案號</button>' +
+      '<button type="button" data-act="rows" data-k="' + k + '">複製重複的列</button></div></div>';
+    h += '<div class="tw"><table><thead><tr><th>列</th><th>比對結果</th>';
+    for (let c = 0; c < w; c++) h += "<th>" + esc(S.header ? S.rows[0][c] || "欄 " + (c + 1) : "欄 " + (c + 1)) + "</th>";
+    h += "</tr></thead><tbody>";
+    let shown = 0, cut = false;
+    for (let i = st; i < S.rows.length; i++) {
+      const r = R[i]; if (only && !r.dup) continue;
+      if (shown >= LIMIT) { cut = true; break; } shown++;
+      let mk = "";
+      if (r.dup) mk = '<span class="tag">重複</span><span class="mute">對方第 ' + r.other.slice(0, 6).map((x) => x + 1).join("、") + (r.other.length > 6 ? " …" : "") + " 列</span>";
+      else if (!r.keys.length && !all) mk = '<span class="mute">（這列沒有案號）</span>';
+      if (r.self) mk += ' <span class="mute">（本表內也重複）</span>';
+      h += '<tr class="' + (r.dup ? "dup" : "") + '"><td class="ln">' + (i + 1) + "</td><td>" + mk + "</td>";
+      for (let c = 0; c < w; c++) {
+        const isKey = all ? r.hit.indexOf(norm(S.rows[i][c])) >= 0 && S.rows[i][c] !== "" : c === S.col;
+        h += '<td class="' + (isKey ? "key" : "") + '">' + esc(S.rows[i][c]) + "</td>";
+      }
+      h += "</tr>";
+    }
+    h += "</tbody></table></div>";
+    if (cut) h += '<p class="hint">畫面只顯示前 ' + LIMIT + ' 列；上面的複製按鈕仍然包含全部。</p>';
+    else if (only && !shown) h += '<p class="hint">這一邊沒有重複的列。</p>';
+    box.innerHTML = h;
+  }
+  let listSig = "";
+  function syncList() {
+    const S = side.b, ok = S.rows.length && dataRows("b") && !S.noId;
+    const sig = ok ? [S.rows.length, S.col, S.header, opt.space, opt.width, opt.sym].join("|") : "";
+    if (sig === listSig) return; listSig = sig;
+    if (ok) { const set = new Set(); buildMap(S).forEach((v, key) => set.add(key)); listCodes = { has: (c) => set.has(norm(c)), n: set.size }; } else listCodes = null;
+    renderTable(); if (pages[cur]) renderForm();
+  }
+  function refresh() { readOpts(); compute(); summary(); renderSide("a"); renderSide("b"); infoLines(); syncList(); }
+  function infoLines() {
+    ["a", "b"].forEach((k) => {
+      const S = side[k], w = S.rows.length ? S.rows[0].length : 0;
+      const nm = S.col === "all" ? "所有欄位" : S.rows.length && S.rows[0][S.col] !== undefined ? "第 " + (S.col + 1) + " 欄" + (S.header && S.rows[0][S.col] ? "「" + S.rows[0][S.col] + "」" : "") : "";
+      $("#" + k + "Sum").textContent = k === "a" ? "只比對 " + (S.col === 1 ? "E化案號" : nm || "E化案號") + "（點此可改）" : S.noId ? "看不出案號在哪一欄，請點這裡自己選" : "只比對案號" + (S.userCol ? "（" + nm + "）" : "（自動判斷：" + nm + "）") + "，點此可改";
+      if (k === "b") $("#bAdv").open = $("#bAdv").open || (S.noId && !!S.rows.length);
+      $("#" + k + "Info").textContent = !S.rows.length ? (S.live ? "上面還沒有登記資料。" : "") : S.live ? "已帶入 " + (S.rows.length - 1) + " 列。" :
+        "已讀入 " + S.rows.length + " 列、" + w + " 欄。" + (S.noId ? "看不出哪一欄是案號，請自己選。" : S.userCol ? "" : "已自動判斷案號欄，不對的話請自己改。");
+    });
+  }
+
+  /* ---------- 複製 ---------- */
+  async function copyText(t, what) {
+    try { await navigator.clipboard.writeText(t); }
+    catch (e) {
+      const ta = document.createElement("textarea"); ta.value = t; ta.style.position = "fixed"; ta.style.opacity = "0";
+      document.body.appendChild(ta); ta.select(); let ok = false; try { ok = document.execCommand("copy"); } catch (x) {} ta.remove();
+      if (!ok) { show("無法自動複製，請改用手動選取。", true); return; }
+    }
+    show("已複製" + what + "。");
+  }
+  const tsv = (rows) => rows.map((r) => r.map((c) => String(c).replace(/[\t\r\n]+/g, " ")).join("\t")).join("\n");
+  function doCopy(k, act) {
+    const S = side[k], R = res[k], st = start(S);
+    if (act === "mark") { const lines = S.rows.map((r, i) => (i < st ? "重複比對" : R[i].dup ? "重複" : "")); if (S.live) lines.shift(); copyText(lines.join("\n"), "「重複」標記欄（共 " + lines.length + " 列，順序和上面的檢查表一樣）"); }
+    else if (act === "keys") {
+      const seen = new Set(), out = [];
+      S.rows.forEach((row, i) => { const r = R[i]; if (!r || !r.dup) return; row.forEach((v, c) => { const n = norm(v); if (n && r.hit.indexOf(n) >= 0 && (S.col === "all" || c === S.col) && !seen.has(n)) { seen.add(n); out.push(v); } }); });
+      if (!out.length) { show("沒有重複的案號可以複製。"); return; }
+      copyText(out.join("\n"), "重複的案號（" + out.length + " 個）");
+    } else {
+      const out = []; if (S.header) out.push(S.rows[0]);
+      S.rows.forEach((row, i) => { if (R[i] && R[i].dup) out.push(row); });
+      if (out.length <= st) { show("沒有重複的列可以複製。"); return; }
+      copyText(tsv(out), "重複的列（" + (out.length - st) + " 列）");
+    }
+  }
+  document.addEventListener("click", (e) => { const b = e.target.closest("button[data-act]"); if (b) doCopy(b.dataset.k, b.dataset.act); });
+
+  /* ---------- 事件 ---------- */
+  function pullA() {
+    const S = side.a, out = rowsOut();
+    S.live = true; S.header = true; S.userHdr = true; S.noId = false;
+    S.rows = out.length ? [HEAD.slice()].concat(out.map((r) => r.map(String))) : [];
+    if (!S.userCol) S.col = 1;
+    buildSelect("a"); refresh();
+  }
+  $("#aCol").addEventListener("change", (e) => { const v = e.target.value; side.a.col = v === "all" ? "all" : +v; side.a.userCol = true; buildSelect("a"); refresh(); });
+  $("#aReload").addEventListener("click", pullA);
+  (function () {
+    const k = "b"; let timer;
+    $("#bText").addEventListener("input", () => { clearTimeout(timer); timer = setTimeout(() => { hide(); const fresh = !side.b.rows.length; setRows("b", parseText($("#bText").value), fresh); }, 200); });
+    $("#bCol").addEventListener("change", (e) => { const v = e.target.value; side.b.col = v === "all" ? "all" : +v; side.b.userCol = true; if (!side.b.userHdr) side.b.header = autoHeader(side.b.rows, v === "all" ? autoCol(side.b.rows).col : +v); buildSelect("b"); refresh(); });
+    $("#bHdr").addEventListener("change", (e) => { side.b.header = e.target.checked; side.b.userHdr = true; buildSelect("b"); refresh(); });
+    $("#bPick").addEventListener("click", () => $("#bFile").click());
+    $("#bFile").addEventListener("change", (e) => { const f = e.target.files[0]; e.target.value = ""; if (f) loadFile("b", f); });
+    $("#bClear").addEventListener("click", () => { $("#bText").value = ""; side.b = mkSide(); hide(); buildSelect("b"); refresh(); });
+    const p = $("#bPanel");
+    p.addEventListener("dragover", (e) => { if (e.dataTransfer && Array.prototype.indexOf.call(e.dataTransfer.types || [], "Files") >= 0) { e.preventDefault(); p.classList.add("over"); } });
+    p.addEventListener("dragleave", () => p.classList.remove("over"));
+    p.addEventListener("drop", (e) => { p.classList.remove("over"); const f = e.dataTransfer && e.dataTransfer.files[0]; if (f) { e.preventDefault(); loadFile("b", f); } });
+  })();
+  ["oSpace", "oWidth", "oSym", "only"].forEach((id) => $("#" + id).addEventListener("change", refresh));
+  try { const s = JSON.parse(localStorage.getItem(KEY) || "null"); if (s) { $("#oSpace").checked = s.space !== false; $("#oWidth").checked = s.width !== false; $("#oSym").checked = !!s.sym; } } catch (e) {}
+  ["a", "b"].forEach(buildSelect); pullA();
+  let pt; new MutationObserver(() => { clearTimeout(pt); pt = setTimeout(() => { if ($("#dupBox").open) pullA(); }, 300); }).observe($("#tbl tbody"), { childList: true });
+  $("#dupBox").addEventListener("toggle", () => { if ($("#dupBox").open) pullA(); });
+  })();
+
+})();
+</script>
+<script>
+/* 小區域（整頁圖、表單、清冊、文字框）已經捲到頂或底時，繼續滾動就改為捲動整個頁面 */
+(function () {
+  function room(el, dy) {   /* null＝不是會捲動的區域；true＝往這個方向還能捲；false＝已到盡頭 */
+    if (el.scrollHeight <= el.clientHeight + 1) return null;
+    const oy = getComputedStyle(el).overflowY;
+    if (oy !== "auto" && oy !== "scroll") return null;
+    return dy < 0 ? el.scrollTop > 0 : el.scrollTop + el.clientHeight < el.scrollHeight - 1;
+  }
+  document.addEventListener("wheel", function (e) {
+    if (e.defaultPrevented || e.ctrlKey || e.metaKey || !e.deltaY || Math.abs(e.deltaY) <= Math.abs(e.deltaX)) return;
+    let exhausted = false;
+    for (let el = e.target; el && el.nodeType === 1 && el !== document.body && el !== document.documentElement; el = el.parentElement) {
+      const r = room(el, e.deltaY);
+      if (r === true) return;
+      if (r === false) exhausted = true;
+    }
+    if (!exhausted) return;
+    e.preventDefault();
+    const k = e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? window.innerHeight : 1;
+    window.scrollBy({ top: e.deltaY * k, left: 0, behavior: "instant" });
+  }, { passive: false });
+})();
+</script>
+<script>
+(function () {
+  function cur() { return document.documentElement.dataset.theme === "dark" ? "dark" : "light"; }
+  function sync() { var t = cur(); document.querySelectorAll("a[data-nav]").forEach(function (a) { a.href = a.getAttribute("data-nav") + "?theme=" + t; }); }
+  var b = document.getElementById("themeBtn");
+  if (b) b.addEventListener("click", function () {
+    var n = cur() === "dark" ? "light" : "dark"; document.documentElement.dataset.theme = n;
+    try { localStorage.setItem("pdf-tools-theme", n); } catch (e) {}
+    sync();
+  });
+  sync();
+})();
+</script>
+</body>
+</html>

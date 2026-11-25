@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="zh-Hant" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SGY工具箱</title>
+<script>(function(){var t=null,m=location.search.match(/[?&]theme=(dark|light)/);try{if(m){t=m[1];localStorage.setItem("pdf-tools-theme",t)}else t=localStorage.getItem("pdf-tools-theme")}catch(e){if(m)t=m[1]}document.documentElement.dataset.theme=t==="dark"?"dark":"light"})();</script>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%232563eb'/%3E%3Cpath d='M20 10h18l12 12v28a4 4 0 0 1-4 4H20a4 4 0 0 1-4-4V14a4 4 0 0 1 4-4z' fill='white'/%3E%3Crect x='22' y='28' width='8' height='8' rx='2' fill='%232563eb'/%3E%3Crect x='34' y='28' width='8' height='8' rx='2' fill='%230a8277'/%3E%3Crect x='22' y='40' width='8' height='8' rx='2' fill='%23d65a0a'/%3E%3Crect x='34' y='40' width='8' height='8' rx='2' fill='%2394a3b8'/%3E%3C/svg%3E">
+<style>
+  :root {
+    color-scheme: light;
+    --bg: #fbfcfe; --panel: #ffffff; --fg: #19263a; --muted: #5d6b82; --line: #e3e9f2;
+    --sky: #eaf3ff; --shadow: rgba(25, 38, 58, .06); --shadow-h: rgba(25, 38, 58, .14);
+    --blue: #2563eb; --blue-soft: #e5eeff;
+    --teal: #0a8277; --teal-soft: #d9f4ef;
+    --orange: #d65a0a; --orange-soft: #ffe9d6;
+    --purple: #6d3fd6; --purple-soft: #ece5fb;
+    --rose: #c2255c; --rose-soft: #fde7ef;
+    --accent: #2563eb;
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --bg: #0f1724; --panel: #172133; --fg: #e7edf7; --muted: #94a3bb; --line: #2a3750;
+    --sky: #14233f; --shadow: rgba(0, 0, 0, .3); --shadow-h: rgba(0, 0, 0, .5);
+    --blue: #6b9bff; --blue-soft: #1b2c52;
+    --teal: #3fc4b5; --teal-soft: #153a38;
+    --orange: #ff9a55; --orange-soft: #402a17;
+    --purple: #b79cff; --purple-soft: #2a2150;
+    --rose: #ff8fb1; --rose-soft: #3d1f2b;
+    --accent: #6b9bff;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--fg);
+    font: 16px/1.6 "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", system-ui, sans-serif; }
+  .top { background: linear-gradient(180deg, var(--sky) 0%, var(--bg) 100%);
+    padding-block: 24px 28px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+  .wrap { max-width: 860px; margin: 0 auto; }
+  .theme-btn { display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px; border: 1px solid var(--line);
+    border-radius: 999px; background: var(--panel); color: var(--fg); font: inherit; font-size: .88rem; cursor: pointer; }
+  .theme-btn:hover { border-color: var(--accent); }
+  .theme-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .theme-btn svg { width: 16px; height: 16px; }
+  .theme-btn .i-sun, .theme-btn .lbl-light { display: none; }
+  :root[data-theme="dark"] .theme-btn .i-sun { display: inline; }
+  :root[data-theme="dark"] .theme-btn .lbl-light { display: inline; }
+  :root[data-theme="dark"] .theme-btn .i-moon, :root[data-theme="dark"] .theme-btn .lbl-dark { display: none; }
+  h1 { font-size: clamp(1.9rem, 5vw, 2.6rem); line-height: 1.2; margin: 0 0 10px; letter-spacing: .02em; }
+  .sub { color: var(--muted); margin: 0; max-width: 34em; }
+  .badge { display: inline-flex; align-items: center; gap: 8px; margin-top: 18px; padding: 6px 14px;
+    background: var(--panel); border: 1px solid var(--line); border-radius: 999px; font-size: .9rem; color: var(--muted); }
+  .dot { width: 9px; height: 9px; border-radius: 50%; background: #22b573; }
+  main { padding-block: 8px 64px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+  .tools { display: grid; gap: 18px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 250px), 1fr)); }
+  a.tool { --c: var(--blue); --cs: var(--blue-soft);
+    display: flex; flex-direction: column; gap: 10px; padding: 24px 22px 20px; min-width: 0;
+    background: var(--panel); border: 1px solid var(--line); border-radius: 18px; color: inherit; text-decoration: none;
+    box-shadow: 0 2px 10px var(--shadow); transition: transform .15s, box-shadow .15s, border-color .15s; }
+  a.tool.merge { --c: var(--teal); --cs: var(--teal-soft); }
+  a.tool.serial { --c: var(--orange); --cs: var(--orange-soft); }
+  a.tool.organize { --c: var(--purple); --cs: var(--purple-soft); }
+  a.tool.batch { --c: var(--rose); --cs: var(--rose-soft); }
+  a.tool.register { --c: #2f855a; --cs: rgba(47,133,90,.14); }
+  a.tool:hover, a.tool:focus-visible { transform: translateY(-3px); border-color: var(--c); outline: none; box-shadow: 0 10px 26px var(--shadow-h); }
+  .ico { width: 56px; height: 56px; border-radius: 16px; background: var(--cs); color: var(--c);
+    display: flex; align-items: center; justify-content: center; }
+  .ico svg { width: 30px; height: 30px; }
+  a.tool h2 { margin: 6px 0 0; font-size: 1.2rem; }
+  a.tool p { margin: 0; color: var(--muted); font-size: .95rem; }
+  .tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 2px; }
+  .tags span { padding: 2px 10px; background: var(--cs); color: var(--c); border-radius: 999px; font-size: .8rem; font-weight: 600; }
+  .go { margin-top: auto; padding-top: 12px; color: var(--c); font-weight: 700; }
+  .notes { margin-top: 36px; padding: 18px 22px; background: var(--panel); border: 1px solid var(--line); border-radius: 14px; }
+  .notes h2 { font-size: 1rem; margin: 0 0 8px; }
+  .notes ul { margin: 0; padding-left: 1.2em; color: var(--muted); font-size: .92rem; display: flex; flex-direction: column; gap: 4px; }
+
+  /* ===== 共用：頂部列與版面比例（所有頁面一致） ===== */
+  body { font-size: 15px; line-height: 1.5; }
+  h1 { font-size: 1.5rem; line-height: 1.3; }
+  .topbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; height: 56px; margin: 0; padding: 0 24px; background: var(--panel); border-bottom: 1px solid var(--line); flex: none; }
+  .topbar .home { align-self: center; }
+  .topbar .theme-btn { margin-left: auto; padding: 6px 12px; font-size: .85rem; }
+  @media (prefers-reduced-motion: reduce) { a.tool { transition: none; } a.tool:hover { transform: none; } }
+</style>
+</head>
+<body>
+  <div class="topbar"><span></span><button class="theme-btn" id="themeBtn" type="button" aria-label="切換深色或淺色主題" title="切換深色或淺色主題"><svg class="i-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg><svg class="i-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg><span class="lbl-dark">深色</span><span class="lbl-light">淺色</span></button></div>
+  <header class="top">
+    <div class="wrap">
+      <h1>SGY工具箱</h1>
+      <p class="sub">流水號核對、陳報單登記、流水號管制表，集中在這裡。選一個工具開始吧。</p>
+      <span class="badge"><span class="dot"></span>檔案預設只在你的瀏覽器內處理，不會上傳</span>
+    </div>
+  </header>
+
+  <main>
+    <div class="wrap">
+      <div class="tools">
+        <a class="tool serial" href="serial-check-merge.html" data-nav="serial-check-merge.html">
+          <span class="ico" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6h11M9 12h11M9 18h11"/><path d="m3.5 6 1 1 2-2M3.5 12l1 1 2-2"/><circle cx="5" cy="18" r="1.4"/></svg>
+          </span>
+          <h2>流水號核對與合併</h2>
+          <p>設定流水號範圍，拖入檔案自動打勾，列出缺少的號碼，補齊後依序合併。</p>
+          <div class="tags"><span>核對缺號</span><span>依流水號</span><span>補足偶數頁</span></div>
+          <span class="go">開啟工具 →</span>
+        </a>
+        <a class="tool register" href="pdf-register.html" data-nav="pdf-register.html">
+          <span class="ico" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h8l5 5v13a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><path d="M14 3v5h5M8.5 13h7M8.5 17h5"/></svg>
+          </span>
+          <h2>陳報單登記</h2>
+          <p>掃描的陳報單、呈報單自動讀出案號與收文資料，核對手寫部分後，複製貼到 Excel 登記表。</p>
+          <div class="tags"><span>辨識案號</span><span>核對手寫</span><span>貼到 Excel</span></div>
+          <span class="go">開啟工具 →</span>
+        </a>
+        <a class="tool control" href="serial-control.html" data-nav="serial-control.html">
+          <span class="ico" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18M9 4v16M12.5 15l1.6 1.6 3.4-3.4"/></svg>
+          </span>
+          <h2>流水號管制表</h2>
+          <p>依月份管制流水號，快速標記已輸入、記下未輸入的原因，列出待處理號碼，可列印、匯出 Excel 與備份。</p>
+          <div class="tags"><span>月份管制</span><span>待處理清單</span><span>匯出 Excel</span></div>
+          <span class="go">開啟工具 →</span>
+        </a>
+      </div>
+
+
+      <section class="notes">
+        <h2>使用前</h2>
+        <ul>
+          <li>建議使用 Chrome 或 Edge。</li>
+          <li>「流水號核對與合併」和「陳報單登記」第一次開啟需要連網，用來載入 PDF 處理元件。</li>
+          <li>「陳報單登記」的 AI 輔助是選用功能，要自己填入金鑰並勾選才會啟用；啟用後會把頁面圖片送到 Google Gemini 辨識，請先確認單位規定。</li>
+          <li>「流水號管制表」的資料存在這台電腦的這個瀏覽器裡，換電腦或清除瀏覽資料就會消失，請定期用「備份（JSON）」或「匯出 Excel」留一份。</li>
+          <li>右上角可以切換深色或淺色，所有工具頁面會使用同一個主題。</li>
+        </ul>
+      </section>
+    </div>
+  </main>
+<script>
+(function () {
+  function cur() { return document.documentElement.dataset.theme === "dark" ? "dark" : "light"; }
+  function sync() { var t = cur(); document.querySelectorAll("a[data-nav]").forEach(function (a) { a.href = a.getAttribute("data-nav") + "?theme=" + t; }); }
+  var b = document.getElementById("themeBtn");
+  if (b) b.addEventListener("click", function () {
+    var n = cur() === "dark" ? "light" : "dark"; document.documentElement.dataset.theme = n;
+    try { localStorage.setItem("pdf-tools-theme", n); } catch (e) {}
+    sync();
+  });
+  sync();
+})();
+</script>
+</body>
+</html>
