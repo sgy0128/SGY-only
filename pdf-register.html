@@ -37,7 +37,7 @@
   button:disabled { opacity: .4; cursor: default; }
   button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
   .primary { background: var(--accent); color: var(--accent-fg); border-color: var(--accent); font-weight: 600; padding: 9px 20px; }
-  input[type=text], textarea, select { width: 100%; padding: 7px 9px; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); color: var(--fg); font: inherit; min-width: 0; }
+  input[type=text], input[type=password], textarea, select { width: 100%; padding: 7px 9px; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); color: var(--fg); font: inherit; min-width: 0; }
   textarea { min-height: 96px; resize: vertical; }
   label.f { display: flex; flex-direction: column; gap: 4px; font-size: .85rem; color: var(--muted); margin-top: 10px; }
   label.chk { display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: .9rem; }
@@ -170,7 +170,7 @@
   #dupBox .mute { color: var(--muted); font-size: .78rem; }
   #dcMsg { display: none; padding: 8px 12px; border-radius: 6px; background: var(--accent-soft); margin-top: 8px; }
   #dcMsg.show { display: block; }
-  #dcMsg.err { background: #fdecec; color: #c62828; }
+  #dcMsg.err { background: var(--danger-soft); color: var(--danger); }
   @media (max-width: 760px) { #dupBox .two { grid-template-columns: 1fr; } }
 </style>
 </head>
@@ -229,7 +229,7 @@
       </div>
       <div class="two">
         <label class="f">每分鐘最多送幾頁（免費額度有限，被擋時會自動等待重試）
-          <input id="aiRpm" type="text" inputmode="numeric" spellcheck="false" placeholder="5">
+          <input id="aiRpm" type="text" inputmode="numeric" spellcheck="false" placeholder="12">
         </label>
         <div style="display:flex;align-items:flex-end"><label class="chk"><input type="checkbox" id="aiOnly">只用 AI，略過本機英數辨識（較快，不用下載辨識引擎）</label></div>
       </div>
@@ -412,8 +412,8 @@
   function lsGet(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
   function lsSet(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
 
-  if (!window.pdfjsLib) { show("無法載入 PDF 處理元件，請確認網路連線後重新整理頁面。", "err"); return; }
-  pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+  if (!window.pdfjsLib) show("無法載入 PDF 處理元件，請確認網路連線後重新整理頁面。", "err");
+  else pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
 
   /* ================= 純函式：案號、日期、文號 ================= */
   const DMAP = { O: "0", Q: "0", D: "0", I: "1", L: "1", A: "1", S: "5", B: "8", Z: "2", G: "6", T: "7" };
@@ -442,11 +442,12 @@
       for (const c0 of t.slice(12)) {
         let c = c0 === "O" ? "0" : c0;
         if (/[1IL]/.test(c)) fl.push("末三碼的 I / 1 / L 要確認");
+        else if (!/\d/.test(c)) fl.push("末三碼含非數字（" + c + "）");
         tail += c;
       }
       o += tail;
       const yy = +o.slice(1, 4), mm = +o.slice(4, 6);
-      if (yy < 100 || yy > 140 || mm < 1 || mm > 12) fl.push("年月看起來不對");
+      if (!/^\d{5}$/.test(o.slice(1, 6)) || yy < 100 || yy > 140 || mm < 1 || mm > 12) fl.push("年月看起來不對");
       const sc = fl.length, stSoft = /[O9]/.test(st) ? "派出所代號 O 和 9（91＝交通分隊）容易混淆，請核對。 " : "", soft = stSoft + (/[6GSB5Z2D0Q8]/.test(tail) ? "末三碼含容易混淆的字（6/G、5/S、8/B、2/Z、0/D），請對照圖片確認" : "");
       if (!best || sc < best.sc) best = { sc, code: o, flags: Array.from(new Set(fl)), soft };
     }
@@ -687,7 +688,7 @@
   $("#rosterReset").addEventListener("click", () => { setRoster(BUILTIN, "內建"); hide(); });
   try {
     const r = JSON.parse(lsGet(KEY_R) || "null");
-    if (r && r.list && r.list.length && r.from && r.from !== "內建") setRoster(r.list, r.from + "，上次使用"); else setRoster(BUILTIN, "內建");
+    if (r && r.list && r.list.length && r.from && r.from !== "內建") setRoster(r.list, String(r.from).replace(/(，上次使用)+$/, "") + "，上次使用"); else setRoster(BUILTIN, "內建");
   } catch (e) { setRoster(BUILTIN, "內建"); }
 
 
@@ -930,9 +931,9 @@
   const DESTS_L = DESTS.slice().sort((a, b) => b.length - a.length), tn = (t) => String(t).replace(/臺/g, "台");
   const destFind = (t) => DESTS_L.find((x) => tn(t).includes(tn(x))) || "";   /* 「南投信義」要比「信義」優先；臺／台視為相同 */
   { const dl = $("#destList"); if (dl) dl.innerHTML = DESTS.map((d) => '<option value="' + d + '">').join(""); }   /* 轉往分局的輸入提示 */
-  const AI = { on: false, key: "", model: "gemini-3.5-flash-lite", model2: "gemini-3.8-flash", zoom: true, schema: false, zoomModel: "gemini-3.8-flash", rpm2: 5, rpm: 5, only: false, rpd: 0 };
+  const AI = { on: false, key: "", model: "gemini-3.5-flash-lite", model2: "gemini-3.8-flash", zoom: true, schema: false, zoomModel: "gemini-3.8-flash", rpm2: 5, rpm: 12, only: false, rpd: 0 };
   const aiStat = { ok: 0, err: 0, tok: 0 };
-  let aiLast = 0, aiStop = false, aiBusy = false, aiFatal = "";
+  const aiLastBy = {}; let aiStop = false, aiBusy = false, aiFatal = "";
   let aiSwitched = "", aiSchemaOff = false, aiZoomDead = false;   /* aiZoomDead：二次放大專用模型今天額度用完，這次作業改用主模型 */   /* aiSwitched：主模型今天額度用完後，這次作業改用的備援模型；aiSchemaOff：模型不接受固定格式時，改回原本的做法 */
   const aiReady = () => AI.on && AI.key.length > 10 && !aiFatal;
   const aiS = (v) => (v == null ? "" : String(v)).trim();
@@ -996,13 +997,13 @@
   function aiSave() {
     AI.on = $("#aiOn").checked; AI.key = $("#aiKey").value.trim();
     AI.model = ($("#aiModel").value.trim() || "gemini-3.5-flash-lite").replace(/^models\//, "");
-    const n = parseInt($("#aiRpm").value, 10); AI.rpm = n > 0 ? Math.min(n, 300) : 5; AI.only = $("#aiOnly").checked; AI.rpd = Math.max(0, parseInt($("#aiRpd").value, 10) || 0);
+    const n = parseInt($("#aiRpm").value, 10); AI.rpm = n > 0 ? Math.min(n, 300) : 12; AI.only = $("#aiOnly").checked; AI.rpd = Math.max(0, parseInt($("#aiRpd").value, 10) || 0);
     AI.model2 = $("#aiModel2").value.trim().replace(/^models\//, ""); AI.zoom = $("#aiZoom").checked; AI.schema = $("#aiSchema").checked; AI.zoomModel = $("#aiZoomModel").value.trim().replace(/^models\//, ""); AI.rpm2 = Math.max(1, Math.min(60, parseInt($("#aiRpm2").value, 10) || 5)); aiSwitched = ""; aiSchemaOff = false; aiZoomDead = false;
     aiFatal = ""; lsSet(KEY_AI, JSON.stringify(AI)); $("#aiOpts").hidden = !AI.on; aiUi();
   }
   function aiLoad() {
     try { const s = JSON.parse(lsGet(KEY_AI) || "null"); if (s && typeof s === "object") Object.assign(AI, s); } catch (e) {}
-    AI.key = String(AI.key || ""); AI.model = String(AI.model || "gemini-3.5-flash-lite").replace(/^models\//, ""); AI.rpm = +AI.rpm > 0 ? +AI.rpm : 5;
+    AI.key = String(AI.key || ""); AI.model = String(AI.model || "gemini-3.5-flash-lite").replace(/^models\//, ""); AI.rpm = +AI.rpm > 0 ? +AI.rpm : 12;
     $("#aiOn").checked = !!AI.on; $("#aiKey").value = AI.key; $("#aiModel").value = AI.model; $("#aiRpm").value = AI.rpm; $("#aiOnly").checked = !!AI.only; $("#aiRpd").value = AI.rpd > 0 ? AI.rpd : "";
     AI.model2 = String(AI.model2 == null ? "" : AI.model2).replace(/^models\//, ""); $("#aiModel2").value = AI.model2; $("#aiZoom").checked = AI.zoom !== false; $("#aiSchema").checked = !!AI.schema;
     AI.zoomModel = String(AI.zoomModel == null ? "" : AI.zoomModel).replace(/^models\//, ""); AI.rpm2 = +AI.rpm2 > 0 ? +AI.rpm2 : 5; $("#aiZoomModel").value = AI.zoomModel; $("#aiRpm2").value = AI.rpm2;
@@ -1020,11 +1021,12 @@
       await sleep(Math.min(500, Math.max(50, end - Date.now())));
     }
   }
-  async function aiGate(rpm) {
+  /* 每個模型各自的每分鐘上限與計時：主模型用「每分鐘送頁數」，備援／放大模型用自己的設定 */
+  async function aiGate(model) {
     if (aiStop) throw new Error("已停止");
-    const r = rpm > 0 ? Math.min(rpm, AI.rpm) : AI.rpm, wait = aiLast + 60000 / Math.max(1, r) - Date.now();
-    if (wait > 0) await waitMsg(wait, "AI 限速等待（每分鐘最多 " + r + " 次）");
-    aiLast = Date.now();
+    const r = model === AI.model ? AI.rpm : AI.rpm2, wait = (aiLastBy[model] || 0) + 60000 / Math.max(1, r) - Date.now();
+    if (wait > 0) await waitMsg(wait, "AI 限速等待（" + model + " 每分鐘最多 " + r + " 次）");
+    aiLastBy[model] = Date.now();
   }
   function retrySec(er) {
     for (const d of (er && er.details) || []) if (d && d.retryDelay) { const m = String(d.retryDelay).match(/([\d.]+)s/); if (m) return parseFloat(m[1]); }
@@ -1056,7 +1058,7 @@
     const apiOf = () => "https://generativelanguage.googleapis.com/v1beta/models/" + encodeURIComponent(model) + ":generateContent";
     const bodyOf = (sch) => JSON.stringify({ contents: [{ role: "user", parts }], generationConfig: sch ? { temperature: 0, responseMimeType: "application/json", responseSchema: sch } : { temperature: 0, responseMimeType: "application/json" } });
     for (let a = 0; ; a++) {
-      await aiGate(model === AI.model ? 0 : AI.rpm2);
+      await aiGate(model);
       const useSchema = !!schema && !aiSchemaOff;
       let res, js; const ctl = new AbortController(), to = setTimeout(() => ctl.abort(), 150000);
       try {
@@ -1465,7 +1467,9 @@
   $("#stopOcr").addEventListener("click", () => { ocrStop = true; aiStop = true; });
 
   /* ---------- 加入檔案 ---------- */
+  window.addEventListener("beforeunload", (e) => { if (pages.length) { e.preventDefault(); e.returnValue = ""; } });
   async function addPdfs(list) {
+    if (!window.pdfjsLib) { show("無法載入 PDF 處理元件，請確認網路連線後重新整理頁面。", "err"); return; }
     const fs = Array.from(list).filter((f) => /\.pdf$/i.test(f.name) || f.type === "application/pdf");
     if (!fs.length) { show("沒有找到 PDF 檔案。", "err"); return; }
     hide();
@@ -1547,14 +1551,14 @@
   }
   function goWarn() {
     for (let k = 1; k <= pages.length; k++) { const i = (cur + k) % pages.length; if (isUnc(pages[i])) { go(i); return; } }
-    $("#msg").textContent = "沒有需要核對（⚠）的頁面了。";
+    show("沒有需要核對（⚠）的頁面了。");
   }
   function go(i) { if (i < 0 || i >= pages.length) return; cur = i; $("#viewer").classList.remove("zoom"); renderForm(); $("#viewer").scrollTop = 0; $("#panel").scrollTop = 0; }
   $("#prev").addEventListener("click", () => go(cur - 1));
   $("#next").addEventListener("click", () => go(cur + 1));
   $("#nextWarn").addEventListener("click", goWarn);
   $("#okBtn").addEventListener("click", () => { markOk(pages[cur]); renderForm(); });
-  document.addEventListener("keydown", (e) => { if (e.key === "Enter" && (e.ctrlKey || e.metaKey) && pages[cur]) { e.preventDefault(); markOk(pages[cur]); go(cur + 1); renderTable(); } });
+  document.addEventListener("keydown", (e) => { if (e.key === "Enter" && (e.ctrlKey || e.metaKey) && pages[cur] && !(e.target.closest && e.target.closest("#dupBox"))) { e.preventDefault(); markOk(pages[cur]); go(cur + 1); renderTable(); } });
   document.addEventListener("keydown", (e) => { if (e.altKey && e.key === "ArrowRight") { e.preventDefault(); go(cur + 1); } else if (e.altKey && e.key === "ArrowLeft") { e.preventDefault(); go(cur - 1); } });
   $("#viewer").addEventListener("click", () => $("#viewer").classList.toggle("zoom"));
 
@@ -1908,7 +1912,7 @@
   let listSig = "";
   function syncList() {
     const S = side.b, ok = S.rows.length && dataRows("b") && !S.noId;
-    const sig = ok ? [S.rows.length, S.col, S.header, opt.space, opt.width, opt.sym].join("|") : "";
+    const sig = ok ? [S.rows.length, S.col, S.header, opt.space, opt.width, opt.sym, S.rows.map((x) => x && x[S.col]).join("\n")].join("|") : "";
     if (sig === listSig) return; listSig = sig;
     if (ok) { const set = new Set(); buildMap(S).forEach((v, key) => set.add(key)); listCodes = { has: (c) => set.has(norm(c)), n: set.size }; } else listCodes = null;
     renderTable(); if (pages[cur]) renderForm();

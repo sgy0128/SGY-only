@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="zh-Hant" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>破獲率試算</title>
+<script>(function(){var t=null,m=location.search.match(/[?&]theme=(dark|light)/);try{if(m){t=m[1];localStorage.setItem("pdf-tools-theme",t)}else t=localStorage.getItem("pdf-tools-theme")}catch(e){if(m)t=m[1]}document.documentElement.dataset.theme=t==="dark"?"dark":"light"})();</script>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230e7490'/%3E%3Cpath d='M20 10h18l12 12v28a4 4 0 0 1-4 4H20a4 4 0 0 1-4-4V14a4 4 0 0 1 4-4z' fill='white'/%3E%3Crect x='22' y='40' width='6' height='8' rx='1.5' fill='%230e7490'/%3E%3Crect x='31' y='33' width='6' height='15' rx='1.5' fill='%230e7490'/%3E%3Crect x='40' y='26' width='6' height='22' rx='1.5' fill='%230e7490'/%3E%3C/svg%3E">
+<style>
+:root{
+  color-scheme:light;
+  --bg:#fbfcfe; --panel:#ffffff; --fg:#19263a; --muted:#5d6b82; --line:#e3e9f2; --head:#eef3fb;
+  --accent:#0e7490; --accent-fg:#ffffff; --accent-soft:#d9f1f6;
+  --have:#138a5a; --have-bg:#dcf5e8; --miss:#c62828; --miss-bg:#fdecec;
+  --card:var(--panel); --ink:var(--fg); --danger:var(--miss); --danger-soft:var(--miss-bg); --ok:var(--have); --ok-soft:var(--have-bg);
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#0f1724; --panel:#172133; --fg:#e7edf7; --muted:#94a3bb; --line:#2a3750; --head:#1d2a42;
+  --accent:#5fd0e8; --accent-fg:#0b1220; --accent-soft:#12343c;
+  --have:#5fd3a0; --have-bg:#123a2a; --miss:#ff8a80; --miss-bg:#3a1f24;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 "Noto Sans TC","Microsoft JhengHei",system-ui,sans-serif}
+.topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;height:56px;margin:0;padding:0 24px;background:var(--panel);border-bottom:1px solid var(--line);flex:none}
+.home{display:inline-flex;align-items:center;gap:8px;align-self:center;padding:5px 14px 5px 6px;border:1px solid var(--line);border-radius:999px;background:var(--panel);color:var(--fg);text-decoration:none;font-size:.88rem;font-weight:600;white-space:nowrap;transition:border-color .15s,color .15s}
+.home .hi{width:26px;height:26px;border-radius:50%;background:var(--accent-soft);color:var(--accent);display:flex;align-items:center;justify-content:center}
+.home .hi svg{width:14px;height:14px}
+.home:hover,.home:focus-visible{border-color:var(--accent);color:var(--accent);outline:none}
+.theme-btn{display:inline-flex;align-items:center;gap:6px;margin-left:auto;padding:6px 12px;border:1px solid var(--line);border-radius:999px;background:var(--panel);color:var(--fg);font:inherit;font-size:.85rem;cursor:pointer;white-space:nowrap}
+.theme-btn:hover{border-color:var(--accent)}
+.theme-btn svg{width:16px;height:16px}
+.theme-btn .i-sun,.theme-btn .lbl-light{display:none}
+:root[data-theme="dark"] .theme-btn .i-sun,:root[data-theme="dark"] .theme-btn .lbl-light{display:inline}
+:root[data-theme="dark"] .theme-btn .i-moon,:root[data-theme="dark"] .theme-btn .lbl-dark{display:none}
+.pagehead h1{font-size:1.5rem;line-height:1.3;margin:0}
+.pagehead p{color:var(--muted);margin:4px 0 0}
+.wrap{max-width:1200px;margin:0 auto;padding:20px 16px 60px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px 18px;margin-bottom:16px}
+.card h3{margin:0 0 10px;font-size:16px}
+.toolbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.toolbar .sp{flex:1}
+button,.btn{font:inherit;cursor:pointer;border:1px solid var(--line);background:var(--panel);color:var(--ink);padding:7px 14px;border-radius:8px}
+button:hover,.btn:hover{background:var(--head)}
+button.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-fg)}
+button.primary:hover{filter:brightness(1.1)}
+button.danger{color:var(--danger)}
+button.small{padding:3px 9px;font-size:13px}
+input{font:inherit;padding:6px 9px;border:1px solid var(--line);border-radius:7px;background:var(--bg);color:var(--ink);min-width:0}
+input:focus{outline:2px solid var(--accent-soft);border-color:var(--accent)}
+input[type=number]{width:100%;text-align:right}
+#tblCum input{min-width:82px;padding:6px 8px}
+#tblCum th,#tblCum td{padding:4px 6px}
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin-bottom:16px}
+.tab{padding:9px 18px;border:none;border-radius:8px 8px 0 0;background:none;color:var(--muted);font-weight:600}
+.tab.active{background:var(--accent-soft);color:var(--accent)}
+.hide{display:none!important}
+.meta{color:var(--muted);font-size:13px}
+table{border-collapse:collapse;width:100%}
+th,td{border:1px solid var(--line);padding:6px 10px;text-align:center}
+th{background:var(--head);font-weight:600;white-space:nowrap}
+td.num{font-variant-numeric:tabular-nums}
+td.rowh{background:var(--head);font-weight:600;white-space:nowrap}
+.scroll{overflow-x:auto}
+.grid2{display:grid;grid-template-columns:minmax(0,3fr) minmax(0,2fr);gap:16px;align-items:start}
+.fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px}
+.fields label{display:flex;flex-direction:column;font-size:12px;color:var(--muted);gap:3px}
+.fields.six{grid-template-columns:repeat(6,minmax(84px,1fr));gap:8px;overflow-x:auto;padding-bottom:2px}
+.fields.six label{font-size:11.5px;white-space:nowrap}
+.fields.six input{padding:6px 6px}
+.drop{border:2px dashed var(--line);border-radius:10px;padding:14px;text-align:center;color:var(--muted)}
+.drop.over{border-color:var(--accent);background:var(--accent-soft)}
+select{font:inherit;padding:6px 9px;border:1px solid var(--line);border-radius:7px;background:var(--bg);color:var(--ink)}
+.step{display:flex;flex-direction:column;gap:4px}
+.step input{text-align:center;font-size:18px;font-weight:600;padding:6px 4px;-moz-appearance:textfield}
+.step input::-webkit-outer-spin-button,.step input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+.step .bt{display:grid;grid-template-columns:1fr 1fr;gap:4px}
+.step .bt button{height:40px;padding:0;font-size:22px;line-height:1;font-weight:600;border-radius:8px;touch-action:manipulation;user-select:none}
+.step .bt button.plus{background:var(--accent-soft);border-color:var(--accent-soft);color:var(--accent)}
+.step .bt button:active{transform:scale(.94)}
+.sub{font-size:13px;color:var(--muted);margin:12px 0 6px;font-weight:600}
+.ok{color:var(--ok);font-weight:700}
+.bad{color:var(--danger);font-weight:700}
+td.okbg{background:var(--ok-soft)}td.badbg{background:var(--danger-soft)}
+.period-head{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.period-head h3{margin:0}
+.chip{padding:2px 10px;border-radius:12px;font-size:13px;background:var(--accent-soft);color:var(--accent)}
+details{margin-top:10px;font-size:13px;color:var(--muted)}
+details summary{cursor:pointer}
+details div{margin-top:6px;line-height:1.8}
+.check{padding:8px 12px;border-radius:8px;font-size:14px;margin-top:10px}
+.check.good{background:var(--ok-soft);color:var(--ok)}.check.diff{background:var(--danger-soft);color:var(--danger)}
+.phr-group{margin-bottom:14px}
+.phr-group h4{margin:0 0 6px;font-size:14px;color:var(--muted)}
+.phr{display:flex;flex-wrap:wrap;gap:8px}
+.chipbtn{display:inline-flex;gap:8px;align-items:center;padding:6px 12px;border-radius:8px;border:1px solid var(--line);background:var(--panel);cursor:pointer;text-align:left}
+.chipbtn:hover{background:var(--accent-soft);border-color:var(--accent)}
+.chipbtn b{font-weight:600}.chipbtn span{color:var(--accent);font-family:ui-monospace,Menlo,monospace;font-size:13px}
+.edit-row{display:grid;grid-template-columns:140px 140px 1fr auto;gap:6px;margin-bottom:6px}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--fg);color:var(--bg);padding:9px 18px;border-radius:8px;opacity:0;transition:opacity .25s;pointer-events:none;z-index:9}
+.toast.show{opacity:.95}
+@media(max-width:860px){.grid2{grid-template-columns:1fr}.topbar h1{font-size:17px;padding-left:90px}.edit-row{grid-template-columns:1fr 1fr}}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <a class="home" href="index.html" data-nav="index.html" title="回到工具箱首頁"><span class="hi" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor"><rect x="3" y="3" width="8" height="8" rx="2"/><rect x="13" y="3" width="8" height="8" rx="2"/><rect x="3" y="13" width="8" height="8" rx="2"/><rect x="13" y="13" width="8" height="8" rx="2"/></svg></span>工具箱首頁</a>
+  <button class="theme-btn" id="themeBtn" type="button" aria-label="切換深色或淺色主題" title="切換深色或淺色主題"><svg class="i-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg><svg class="i-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg><span class="lbl-dark">深色</span><span class="lbl-light">淺色</span></button>
+</div>
+
+<div class="wrap">
+  <header class="pagehead" style="margin-bottom:14px"><h1>破獲率試算</h1><p>輸入累計發破數與今日數據，算出週、月、年還須輸入多少件才達標；可直接匯入系統報表（.xls）。</p></header>
+  <div class="tabs">
+    <button class="tab active" data-tab="calc">預定破獲率（累計）</button>
+    <button class="tab" data-tab="phr">常用字句</button>
+  </div>
+
+  <section class="pane" id="pane-calc">
+    <div class="card" id="impCard">
+      <div class="toolbar" style="margin-bottom:8px">
+        <h3 style="margin:0">匯入系統報表（.xls）</h3><span class="sp"></span>
+        <span class="meta" id="impLast"></span>
+      </div>
+      <div id="drop" class="drop">把「年累計／月累計／本週」三個 .xls 一次拖進來，或 <label class="btn small" style="display:inline-block">選擇檔案<input type="file" id="fileXls" accept=".xls" multiple hidden></label></div>
+      <div id="impPreview" class="hide">
+        <div class="fields" style="margin:12px 0 6px;grid-template-columns:repeat(auto-fit,minmax(150px,max-content));align-items:end">
+          <label>分局<select id="impBranch"></select></label>
+          <label style="justify-content:flex-end"><span>竊盜組成</span>
+            <span id="impTheft" style="display:flex;gap:10px;color:var(--ink);font-size:14px"></span></label>
+        </div>
+        <div class="scroll"><table id="tblImp"></table></div>
+        <div class="toolbar" style="margin-top:10px">
+          <label style="display:flex;gap:6px;align-items:center"><input type="checkbox" id="impBureau" checked> 同時更新局累計（全市各單位加總，取「年」檔）</label>
+          <span class="sp"></span><span class="meta" id="impWarn"></span>
+          <button id="impCancel">取消</button><button class="primary" id="impApply">套用</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid2">
+      <div class="card">
+        <h3>累計發破數</h3>
+        <div class="scroll"><table id="tblCum"></table></div>
+        <div class="sub">本日數據</div>
+        <div class="fields six" id="fToday"></div>
+        <div class="sub">輸入數（今日已輸入）</div>
+        <div class="fields six" id="fEntry"></div>
+        <div class="toolbar" style="margin-top:12px">
+          <button class="danger small" id="clearDay">清空本日數據與輸入數</button>
+        </div>
+      </div>
+      <div class="card">
+        <h3>局累計與目標</h3>
+        <div class="fields" id="fBureau"></div>
+        <div class="check meta" id="bureauRate" style="background:var(--head)"></div>
+        <div class="sub">輸入數核對</div>
+        <div class="fields" id="fCheck"></div>
+        <div class="check" id="checkBox"></div>
+        <details>
+          <summary>參數（預估發生、緩衝、各週期目標）</summary>
+          <div class="scroll" style="margin-top:8px"><table id="tblParams"></table></div>
+          <div class="meta" style="margin-top:6px">月、年的「全般」目標＝上方「自訂破獲率目標」。預估發生數會加在全般發生數；緩衝加在詐欺／竊盜發生數（預設週、月 +2，年 0）。</div>
+        </details>
+      </div>
+    </div>
+
+    <div id="results"></div>
+  </section>
+
+  <section class="pane hide" id="pane-phr">
+    <div class="card">
+      <div class="toolbar" style="margin-bottom:12px"><span class="meta">點一下即複製文字</span><span class="sp"></span><button id="togEdit">編輯</button></div>
+      <div id="phrView"></div>
+      <div id="phrEdit" class="hide"></div>
+    </div>
+  </section>
+
+  <div class="card">
+    <div class="toolbar">
+      <button id="btnJson">備份 JSON</button>
+      <label class="btn">還原 JSON<input type="file" id="fileJson" accept=".json" hidden></label>
+      <span class="sp"></span>
+      <span class="meta">資料存於本機瀏覽器</span>
+    </div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+<script>
+const KEY = "sgy-clearance-v1";
+const DEFAULTS = {
+  cum:{ year:{gO:5815,gC:4745,fO:1533,fC:1202,tO:707,tC:627},
+        month:{gO:375,gC:331,fO:79,fC:87,tO:47,tC:47},
+        week:{gO:87,gC:43,fO:26,fC:20,tO:19,tC:14} },
+  today:{gOcc:2,fOcc:2,tOcc:0,oG:0,oF:0,mv:0},
+  entry:{e1:0,e2:0,e3:0,e4:0,e5:0,e6:0},
+  bureau:{occ:99086,cl:80448,goal:0.83},
+  check:{last:8873,first:8874,k16:0},
+  params:{
+    est:{week:10,month:10,year:10},
+    buf:{week:2,month:2,year:0},
+    goalG:{week:0.8},
+    goalF:{week:0.8,month:0.8,year:0.8},
+    goalT:{week:0.8,month:0.8,year:0.9}
+  },
+  imp:{branch:"土城分局",theft:{major:true,normal:true,car:true,moto:true,life:false},bureau:true,last:""},
+  phrases:[
+    {g:"所別代碼",l:"土城所",t:"AD1O1"},{g:"所別代碼",l:"廣福所",t:"AD1P1"},{g:"所別代碼",l:"金城所",t:"AD1M1"},
+    {g:"所別代碼",l:"清水所",t:"AD1Q1"},{g:"所別代碼",l:"頂埔所",t:"AD1R1"},{g:"所別代碼",l:"交通分隊",t:"AD191"},{g:"所別代碼",l:"偵查隊",t:"AD141"},
+    {g:"證物（毒品）",l:"海洛因",t:"CA16"},{g:"證物（毒品）",l:"安非他命",t:"CB52"},{g:"證物（毒品）",l:"依托咪酯",t:"CCAV"},
+    {g:"文書",l:"其他文書",t:"I000"},{g:"文書",l:"酒駕",t:"當事人酒精測定紀錄表"},{g:"文書",l:"傷害",t:"診斷證明書"},
+    {g:"系統查詢",l:"165",t:"辦理刑案紀錄業務，確認案件財損金額"},
+    {g:"外事案件",l:"刑案紀錄表",t:"繕打刑案紀錄表，表號：11502AD100000"}
+  ]
+};
+const clone = o => JSON.parse(JSON.stringify(o));
+let S = load();
+function load(){
+  try{ const t=localStorage.getItem(KEY); if(t){ const d=JSON.parse(t); return merge(clone(DEFAULTS),d);} }catch(e){}
+  return clone(DEFAULTS);
+}
+function merge(b,o){ for(const k in o){ if(o[k]&&typeof o[k]==="object"&&!Array.isArray(o[k])&&b[k]&&typeof b[k]==="object") merge(b[k],o[k]); else b[k]=o[k]; } return b; }
+function save(){ try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){} }
+const $ = id => document.getElementById(id);
+const esc = s => String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+function toast(m){const t=$("toast");t.textContent=m;t.classList.add("show");setTimeout(()=>t.classList.remove("show"),1800)}
+const getP=(p)=>p.split(".").reduce((o,k)=>o[k],S);
+function setP(p,v){const ks=p.split(".");const l=ks.pop();ks.reduce((o,k)=>o[k],S)[l]=v;}
+const f1=n=>(Math.round(n*10)/10).toString();
+const pct=(a,b)=>b>0?(a/b*100).toFixed(1)+"%":"—";
+
+/* ---------- 輸入區 ---------- */
+function numField(path,label,step){return `<label>${label}<input type="number" step="${step||1}" data-p="${path}" value="${getP(path)}"></label>`;}
+function stepField(path,label){return `<label class="step">${label}<input type="number" inputmode="numeric" data-p="${path}" value="${getP(path)}"><span class="bt"><button type="button" data-st="${path}" data-d="-1" aria-label="減一">−</button><button type="button" class="plus" data-st="${path}" data-d="1" aria-label="加一">+</button></span></label>`;}
+document.addEventListener("click",e=>{
+  const b=e.target.closest("[data-st]"); if(!b) return; e.preventDefault();
+  const path=b.dataset.st, inp=document.querySelector(`input[data-p="${path}"]`);
+  const v=Math.max(0,(+getP(path)||0)+(+b.dataset.d)); setP(path,v); inp.value=v; save(); renderResults();
+});
+function renderInputs(){
+  const cols=[["gO","全般發生"],["gC","全般破獲"],["fO","詐欺發生"],["fC","詐欺破獲"],["tO","竊盜發生"],["tC","竊盜破獲"]];
+  let h=`<tr><th></th>${cols.map(c=>`<th>${c[1]}</th>`).join("")}</tr>`;
+  [["year","年累計"],["month","月累計"],["week","本週"]].forEach(([p,n])=>{
+    h+=`<tr><td class="rowh">${n}</td>${cols.map(([k])=>`<td><input type="number" data-p="cum.${p}.${k}" value="${S.cum[p][k]}"></td>`).join("")}</tr>`;
+  });
+  $("tblCum").innerHTML=h;
+  $("fToday").innerHTML=[["gOcc","本轄一般發生"],["fOcc","本轄詐欺發生"],["tOcc","本轄竊盜發生"],["oG","他轄一般發破"],["oF","他轄詐欺發破"],["mv","汽機車竊盜發生"]].map(([k,l])=>stepField("today."+k,l)).join("");
+  $("fEntry").innerHTML=[["e1","輸入(發破)"],["e2","輸入(破獲)"],["e3","輸入(詐欺發破)"],["e4","輸入(詐欺破獲)"],["e5","輸入(竊盜發破)"],["e6","輸入(竊盜破獲)"]].map(([k,l])=>stepField("entry."+k,l)).join("");
+  $("fBureau").innerHTML=numField("bureau.occ","局累計發生數")+numField("bureau.cl","局累計破獲數")+numField("bureau.goal","自訂破獲率目標（0.83＝83%）",0.01);
+  $("fCheck").innerHTML=numField("check.last","表號末數")+numField("check.first","初表")+numField("check.k16","領取發生");
+  const P=S.params;
+  const row=(lab,arr)=>`<tr><td class="rowh">${lab}</td>${arr.join("")}</tr>`;
+  const inp=(p,s)=>`<td><input type="number" step="${s||1}" data-p="params.${p}" value="${getP("params."+p)}"></td>`;
+  const dis=`<td class="meta">＝自訂目標</td>`;
+  $("tblParams").innerHTML=`<tr><th></th><th>週</th><th>月</th><th>年</th></tr>`+
+    row("預估發生數",["week","month","year"].map(k=>inp("est."+k)))+
+    row("詐欺/竊盜緩衝",["week","month","year"].map(k=>inp("buf."+k)))+
+    row("全般目標",[inp("goalG.week",0.01),dis,dis])+
+    row("詐欺目標",["week","month","year"].map(k=>inp("goalF."+k,0.01)))+
+    row("竊盜目標",["week","month","year"].map(k=>inp("goalT."+k,0.01)));
+}
+document.addEventListener("input",e=>{
+  const p=e.target.dataset&&e.target.dataset.p; if(!p) return;
+  const v=e.target.value===""?0:+e.target.value; setP(p,isNaN(v)?0:v); save(); renderResults();
+});
+$("clearDay").onclick=()=>{ if(!confirm("清空本日數據與輸入數？（累計數與目標保留）"))return;
+  Object.keys(S.today).forEach(k=>S.today[k]=0); Object.keys(S.entry).forEach(k=>S.entry[k]=0); S.check.k16=0; S.check.first=S.check.last+1; save(); renderInputs(); renderResults(); };
+
+/* ---------- 計算 ---------- */
+function calc(p){
+  const c=S.cum[p], t=S.today, e=S.entry, est=S.params.est[p], buf=S.params.buf[p];
+  const goalG = p==="week"?S.params.goalG.week:S.bureau.goal;
+  const entries=e.e1+e.e2+e.e3+e.e4+e.e5+e.e6;
+  // 全般
+  const occG=c.gO+t.gOcc+t.fOcc+t.oG+t.oF+t.tOcc+e.e1+e.e3+e.e5+t.mv;
+  const clG=c.gC+e.e1+e.e3+e.e5+e.e2+e.e4+e.e6;
+  // 詐欺
+  const occF=c.fO+t.fOcc+t.oF+e.e3, clF=c.fC+e.e3+e.e4;
+  // 竊盜
+  const occT=c.tO+t.mv+e.e5+t.tOcc, clT=c.tC+e.e5+e.e6;
+  const mk=(name,occ,cl,add,goal,cur)=>({name,occ,add,cl,goal,req:(occ+add)*goal,cur,need:(occ+add)*goal-cur,rateEst:(occ+add)>0?cl/(occ+add):0,rateNow:occ>0?cl/occ:0});
+  return {
+    rows:[ mk("全般",occG,clG,est,goalG,entries+c.gC),
+           mk("詐欺",occF,clF,buf,S.params.goalF[p],clF),
+           mk("竊盜",occT,clT,buf,S.params.goalT[p],clT) ],
+    detG:{occ:`累計 ${c.gO} ＋ 本轄一般 ${t.gOcc} ＋ 詐欺 ${t.fOcc} ＋ 他轄發破 ${t.oF+t.oG} ＋ 竊盜 ${t.tOcc} ＋ 輸入(發破/詐欺/竊盜) ${e.e1}/${e.e3}/${e.e5} ＋ 汽機車竊盜 ${t.mv}（＋預估 ${est}）`,
+          cl:`累計破獲 ${c.gC} ＋ 輸入(發破) ${e.e1}/${e.e3}/${e.e5} ＋ 輸入(破獲) ${e.e2}/${e.e4}/${e.e6}`}
+  };
+}
+const LABEL={week:"本週",month:"本月",year:"本年"};
+function renderResults(){
+  let html="";
+  const summaries=[];
+  ["week","month","year"].forEach(p=>{
+    const r=calc(p);
+    let h=`<tr><th></th><th>發生數<br><span class="meta">不含預估</span></th><th>預估／緩衝</th><th>破獲數</th><th>目標</th><th>預計輸入數</th><th>目前輸入數</th><th>尚須輸入數</th><th>破獲率<br><span class="meta">加預估</span></th><th>目前破獲率</th></tr>`;
+    r.rows.forEach(x=>{
+      const done=x.need<=0, ok=x.rateEst>=x.goal;
+      h+=`<tr><td class="rowh">${x.name}</td><td class="num">${x.occ}</td><td class="num">${x.add}</td><td class="num">${x.cl}</td><td class="num">${Math.round(x.goal*1000)/10}%</td>
+      <td class="num">${f1(x.req)}</td><td class="num">${x.cur}</td>
+      <td class="num ${done?"okbg":"badbg"}">${done?`<span class="ok">已達標</span> <span class="meta">(${f1(x.need)})</span>`:`<span class="bad">${f1(x.need)}</span> <span class="meta">≈ ${Math.ceil(x.need)} 件</span>`}</td>
+      <td class="num ${ok?"okbg":""}"><b>${pct(x.cl,x.occ+x.add)}</b></td><td class="num">${pct(x.cl,x.occ)}</td></tr>`;
+      });
+    html+=`<div class="card"><div class="period-head"><h3>${LABEL[p]}</h3><span class="chip">${p==="week"?"週":p==="month"?"月":"年"}累計</span><span class="sp" style="flex:1"></span><button class="small" data-copy="${p}">複製摘要</button></div>
+      <div class="scroll"><table>${h}</table></div>
+      <details><summary>全般明細</summary><div>發生：${r.detG.occ}<br>破獲：${r.detG.cl}</div></details></div>`;
+    summaries.push(`${LABEL[p]}：`+r.rows.map(x=>`${x.name} ${pct(x.cl,x.occ+x.add)}(現${pct(x.cl,x.occ)}，尚須${x.need<=0?"已達標":Math.ceil(x.need)+"件"})`).join("；"));
+  });
+  $("results").innerHTML=html; window._sum=summaries;
+  document.querySelectorAll("[data-copy]").forEach(b=>b.onclick=()=>{const i=["week","month","year"].indexOf(b.dataset.copy);copy(window._sum[i]);});
+  // 局破獲率 / 核對
+  $("bureauRate").innerHTML=`局破獲率：<b>${pct(S.bureau.cl,S.bureau.occ)}</b>　目標 ${Math.round(S.bureau.goal*1000)/10}%`;
+  const total=S.entry.e1+S.entry.e2+S.entry.e3+S.entry.e4+S.entry.e5+S.entry.e6+S.check.k16;
+  const forms=S.check.last-S.check.first+1;
+  const same=total===forms;
+  $("checkBox").className="check "+(same?"good":"diff");
+  $("checkBox").innerHTML=`總和（輸入數＋領取發生）<b>${total}</b>　總輸入數（末數−初表+1）<b>${forms}</b>　${same?"✓ 相符":"✗ 差 "+(total-forms)}`;
+}
+function copy(t){ (navigator.clipboard?navigator.clipboard.writeText(t):Promise.reject()).then(()=>toast("已複製"),()=>{const a=document.createElement("textarea");a.value=t;document.body.appendChild(a);a.select();document.execCommand("copy");a.remove();toast("已複製");}); }
+
+/* ---------- 常用字句 ---------- */
+function renderPhr(){
+  const groups=[...new Set(S.phrases.map(p=>p.g))];
+  $("phrView").innerHTML=groups.map(g=>`<div class="phr-group"><h4>${esc(g)}</h4><div class="phr">${S.phrases.map((p,i)=>p.g===g?`<button class="chipbtn" data-i="${i}"><b>${esc(p.l)}</b><span>${esc(p.t)}</span></button>`:"").join("")}</div></div>`).join("");
+  $("phrEdit").innerHTML=S.phrases.map((p,i)=>`<div class="edit-row" data-i="${i}"><input data-f="g" value="${esc(p.g)}" placeholder="分類"><input data-f="l" value="${esc(p.l)}" placeholder="名稱"><input data-f="t" value="${esc(p.t)}" placeholder="內容"><button class="small danger" data-del="${i}">✕</button></div>`).join("")+`<button class="primary" id="addPhr">新增一筆</button>`;
+}
+$("phrView").addEventListener("click",e=>{const b=e.target.closest("[data-i]"); if(b) copy(S.phrases[+b.dataset.i].t);});
+$("phrEdit").addEventListener("change",e=>{const r=e.target.closest("[data-i]"); if(!r||!e.target.dataset.f) return; S.phrases[+r.dataset.i][e.target.dataset.f]=e.target.value.trim(); save(); renderPhr(); $("phrEdit").classList.remove("hide"); $("phrView").classList.add("hide");});
+$("phrEdit").addEventListener("click",e=>{
+  if(e.target.dataset.del!=null){ S.phrases.splice(+e.target.dataset.del,1); save(); renderPhr(); keepEdit(); }
+  if(e.target.id==="addPhr"){ S.phrases.push({g:S.phrases.at(-1)?.g||"",l:"",t:""}); save(); renderPhr(); keepEdit(); }
+});
+function keepEdit(){ $("phrEdit").classList.remove("hide"); $("phrView").classList.add("hide"); }
+$("togEdit").onclick=()=>{ const ed=$("phrEdit").classList.contains("hide"); $("phrEdit").classList.toggle("hide",!ed); $("phrView").classList.toggle("hide",ed); $("togEdit").textContent=ed?"完成":"編輯"; };
+
+/* ---------- 備份 / 分頁 ---------- */
+$("btnJson").onclick=()=>{const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([JSON.stringify(S,null,1)],{type:"application/json"}));a.download="破獲率試算備份.json";a.click();};
+$("fileJson").onchange=async e=>{const f=e.target.files[0];if(!f)return;try{S=merge(clone(DEFAULTS),JSON.parse(await f.text()));save();renderAll();toast("已還原");}catch(err){toast("JSON 格式不正確");}e.target.value="";};
+document.querySelectorAll(".tab").forEach(b=>b.onclick=()=>{
+  document.querySelectorAll(".tab").forEach(x=>x.classList.toggle("active",x===b));
+  document.querySelectorAll(".pane").forEach(p=>p.classList.toggle("hide",p.id!=="pane-"+b.dataset.tab));
+});
+function renderAll(){renderInputs();renderResults();renderPhr();}
+/* 最小 .xls (BIFF8) 讀取器：只讀第一個工作表，回傳 {rows:[[...]]} */
+function parseXls(buf){
+  const u8 = buf instanceof Uint8Array ? buf : new Uint8Array(buf);
+  const dv = new DataView(u8.buffer, u8.byteOffset, u8.byteLength);
+  const sig=[0xD0,0xCF,0x11,0xE0,0xA1,0xB1,0x1A,0xE1];
+  if(!sig.every((b,i)=>u8[i]===b)) throw new Error("不是 .xls（BIFF）檔案");
+  const ss = 1<<dv.getUint16(0x1E,true), mss = 1<<dv.getUint16(0x20,true);
+  const nFat=dv.getUint32(0x2C,true), dirStart=dv.getUint32(0x30,true), cutoff=dv.getUint32(0x38,true);
+  const mfStart=dv.getUint32(0x3C,true), nMf=dv.getUint32(0x40,true), difStart=dv.getUint32(0x44,true), nDif=dv.getUint32(0x48,true);
+  const sec = i => u8.subarray(512+i*ss, 512+(i+1)*ss);
+  // DIFAT
+  let difat=[]; for(let i=0;i<109;i++){const v=dv.getUint32(0x4C+i*4,true); if(v<0xFFFFFFFA) difat.push(v);}
+  let ds=difStart; for(let k=0;k<nDif && ds<0xFFFFFFFA;k++){const s=sec(ds), d=new DataView(s.buffer,s.byteOffset,s.byteLength); for(let i=0;i<ss/4-1;i++){const v=d.getUint32(i*4,true); if(v<0xFFFFFFFA) difat.push(v);} ds=d.getUint32(ss-4,true);}
+  const fat=[]; difat.slice(0,nFat).forEach(si=>{const s=sec(si),d=new DataView(s.buffer,s.byteOffset,s.byteLength); for(let i=0;i<ss/4;i++) fat.push(d.getUint32(i*4,true));});
+  const chain=(start,table)=>{const out=[];let c=start,g=0;while(c<0xFFFFFFFA&&g++<1e6){out.push(c);c=table[c];}return out;};
+  const readChain=(start,size)=>{const cs=chain(start,fat);const o=new Uint8Array(cs.length*ss);cs.forEach((c,i)=>o.set(sec(c),i*ss));return size!=null?o.subarray(0,size):o;};
+  const dir=readChain(dirStart);
+  const dd=new DataView(dir.buffer,dir.byteOffset,dir.byteLength);
+  const ents=[];
+  for(let o=0;o+128<=dir.length;o+=128){
+    const nl=dd.getUint16(o+0x40,true); if(!nl) continue;
+    let name=""; for(let i=0;i<(nl-2)/2;i++) name+=String.fromCharCode(dd.getUint16(o+i*2,true));
+    ents.push({name,type:dir[o+0x42],start:dd.getUint32(o+0x74,true),size:dd.getUint32(o+0x78,true)});
+  }
+  const wbE=ents.find(e=>e.type===2&&(e.name==="Workbook"||e.name==="Book")); if(!wbE) throw new Error("找不到 Workbook 資料");
+  let wb;
+  if(wbE.size<cutoff){
+    const root=ents.find(e=>e.type===5); const mini=readChain(root.start,root.size);
+    const mf=[]; chain(mfStart,fat).forEach(si=>{const s=sec(si),d=new DataView(s.buffer,s.byteOffset,s.byteLength); for(let i=0;i<ss/4;i++) mf.push(d.getUint32(i*4,true));});
+    const cs=chain(wbE.start,mf); wb=new Uint8Array(cs.length*mss); cs.forEach((c,i)=>wb.set(mini.subarray(c*mss,(c+1)*mss),i*mss)); wb=wb.subarray(0,wbE.size);
+  } else wb=readChain(wbE.start,wbE.size);
+  const wv=new DataView(wb.buffer,wb.byteOffset,wb.byteLength);
+  // records
+  const recs=[]; for(let p=0;p+4<=wb.length;){const id=wv.getUint16(p,true),len=wv.getUint16(p+2,true);recs.push({id,off:p+4,len});p+=4+len;}
+  // SST
+  const sst=[]; 
+  const si=recs.findIndex(r=>r.id===0xFC);
+  if(si>=0){
+    const segs=[recs[si]]; for(let j=si+1;j<recs.length&&recs[j].id===0x3C;j++) segs.push(recs[j]);
+    let sg=0,pos=segs[0].off+8; const end=()=>segs[sg].off+segs[sg].len;
+    const nextSeg=()=>{sg++;pos=segs[sg].off;};
+    const rb=()=>{if(pos>=end())nextSeg();return wb[pos++];};
+    const r16=()=>rb()|(rb()<<8); const r32=()=>(r16()|(r16()<<16))>>>0;
+    const total=wv.getUint32(segs[0].off+4,true);
+    for(let n=0;n<total;n++){
+      if(sg>=segs.length-1&&pos>=end()) break;
+      const cch=r16(), fl=rb(); let runs=0,ext=0;
+      if(fl&8) runs=r16(); if(fl&4) ext=r32();
+      let wide=fl&1, s="";
+      for(let i=0;i<cch;i++){
+        if(pos>=end()){ nextSeg(); wide=wb[pos++]&1; }
+        if(wide){const lo=rb(),hi=rb(); s+=String.fromCharCode(lo|(hi<<8));} else s+=String.fromCharCode(rb());
+      }
+      for(let i=0;i<runs*4;i++) rb();
+      for(let i=0;i<ext;i++) rb();
+      sst.push(s);
+    }
+  }
+  // cells of first worksheet
+  const rk=v=>{let x; if(v&2){x=v>>2;} else {const b=new DataView(new ArrayBuffer(8)); b.setUint32(4,(v&0xFFFFFFFC)>>>0,true); x=b.getFloat64(0,true);} if(v&1)x/=100; return x;};
+  const cells={}; let sheetIdx=-1,maxR=0,maxC=0;
+  const put=(r,c,v)=>{cells[r+","+c]=v;if(r>maxR)maxR=r;if(c>maxC)maxC=c;};
+  for(const r of recs){
+    if(r.id===0x809){ const t=wv.getUint16(r.off+2,true); if(t===0x10) sheetIdx++; continue; }
+    if(sheetIdx!==0||r.len<6) continue;
+    const row=wv.getUint16(r.off,true), col=wv.getUint16(r.off+2,true);
+    if(r.id===0xFD) put(row,col,sst[wv.getUint32(r.off+6,true)]);
+    else if(r.id===0x203) put(row,col,wv.getFloat64(r.off+6,true));
+    else if(r.id===0x27E) put(row,col,rk(wv.getUint32(r.off+6,true)));
+    else if(r.id===0xBD){ const last=wv.getUint16(r.off+r.len-2,true); for(let c=col,p=r.off+4;c<=last;c++,p+=6) put(row,c,rk(wv.getUint32(p+2,true))); }
+    else if(r.id===0x204){ const n=wv.getUint16(r.off+6,true),fl=wb[r.off+8]; let s=""; if(fl&1){for(let i=0;i<n;i++)s+=String.fromCharCode(wv.getUint16(r.off+9+i*2,true));} else {for(let i=0;i<n;i++)s+=String.fromCharCode(wb[r.off+9+i]);} put(row,col,s); }
+    else if(r.id===0x06){ if(!(wv.getUint16(r.off+12,true)===0xFFFF)) put(row,col,wv.getFloat64(r.off+6,true)); }
+  }
+  const rows=[]; for(let r=0;r<=maxR;r++){const a=[];for(let c=0;c<=maxC;c++){const v=cells[r+","+c];a.push(v===undefined?"":v);}rows.push(a);}
+  return {rows};
+}
+
+/* ---------- 匯入系統報表 ---------- */
+const THEFT=[["major","重大竊盜"],["normal","普通竊盜"],["car","汽車竊盜"],["moto","機車竊盜"],["life","民生竊盜"]];
+const PNAME={year:"年累計",month:"月累計",week:"本週"};
+let IMP=[];
+function colPair(rows,name){const c=rows[0].indexOf(name);return c<0?null:c;}
+function branchVals(rows,branch){
+  const r=rows.find((x,i)=>i>=3&&x[0]===branch); if(!r) return null;
+  const g=n=>{const c=colPair(rows,n);return c==null?[0,0]:[+r[c]||0,+r[c+1]||0];};
+  const sel=S.imp.theft; let t=[0,0]; THEFT.forEach(([k,n])=>{ if(sel[k]){const v=g(n);t[0]+=v[0];t[1]+=v[1];} });
+  const G=g("全般刑案"),F=g("詐欺");
+  return {gO:G[0],gC:G[1],fO:F[0],fC:F[1],tO:t[0],tC:t[1],parts:Object.fromEntries(THEFT.map(([k,n])=>[k,g(n)]))};
+}
+function bureauTotal(rows){const c=colPair(rows,"全般刑案");let o=0,cl=0;rows.forEach((r,i)=>{if(i>=3&&r[0]){o+=+r[c]||0;cl+=+r[c+1]||0;}});return {occ:o,cl};}
+function autoAssign(){
+  const v=IMP.map(f=>branchVals(f.rows,S.imp.branch)?.gO||0);
+  if(IMP.length===3){ const ord=[0,1,2].sort((a,b)=>v[b]-v[a]); ["year","month","week"].forEach((p,i)=>IMP[ord[i]].period=p); return; }
+  IMP.forEach((f,i)=>{ let best="week",bd=1e9; ["year","month","week"].forEach(p=>{const d=Math.abs(Math.log((v[i]+1)/(S.cum[p].gO+1)));if(d<bd){bd=d;best=p;}}); f.period=best; });
+}
+async function loadXls(files){
+  const list=[...files].filter(f=>/\.xls$/i.test(f.name));
+  if(!list.length){toast("請選擇 .xls 檔案");return;}
+  IMP=[];
+  for(const f of list){ try{ IMP.push({name:f.name,rows:parseXls(await f.arrayBuffer()).rows}); }catch(e){ toast(f.name+"：讀取失敗（"+e.message+"）"); } }
+  if(!IMP.length) return;
+  const names=IMP[0].rows.slice(3).map(r=>r[0]).filter(Boolean);
+  if(!names.includes(S.imp.branch)) S.imp.branch=names.includes("土城分局")?"土城分局":names[0];
+  $("impBranch").innerHTML=names.map(n=>`<option ${n===S.imp.branch?"selected":""}>${esc(n)}</option>`).join("");
+  $("impTheft").innerHTML=THEFT.map(([k,n])=>`<label style="display:flex;gap:3px;align-items:center"><input type="checkbox" data-th="${k}" ${S.imp.theft[k]?"checked":""}>${n.replace("竊盜","")}</label>`).join("");
+  autoAssign(); renderImp(); $("impPreview").classList.remove("hide");
+}
+function renderImp(){
+  let h=`<tr><th>檔案</th><th>期間</th><th>全般發生</th><th>全般破獲</th><th>詐欺發生</th><th>詐欺破獲</th><th>竊盜發生</th><th>竊盜破獲</th><th>竊盜明細（發/破）</th></tr>`;
+  IMP.forEach((f,i)=>{
+    const v=branchVals(f.rows,S.imp.branch);
+    h+=`<tr><td class="meta" style="max-width:150px;overflow:hidden;text-overflow:ellipsis" title="${esc(f.name)}">${esc(f.name)}</td>
+    <td><select data-ip="${i}">${Object.entries(PNAME).map(([k,n])=>`<option value="${k}" ${f.period===k?"selected":""}>${n}</option>`).join("")}</select></td>`+
+    (v?[v.gO,v.gC,v.fO,v.fC,v.tO,v.tC].map(x=>`<td class="num"><b>${x}</b></td>`).join("")+`<td class="meta" style="text-align:left">${THEFT.map(([k,n])=>n.replace("竊盜","")+" "+v.parts[k][0]+"/"+v.parts[k][1]).join("　")}</td>`:`<td colspan="7" class="bad">找不到 ${esc(S.imp.branch)}</td>`)+`</tr>`;
+  });
+  $("tblImp").innerHTML=h;
+  const ps=IMP.map(f=>f.period), dup=new Set(ps).size!==ps.length;
+  $("impWarn").textContent=dup?"⚠ 期間重複，請調整":"";
+  $("impApply").disabled=dup;
+}
+$("fileXls").onchange=e=>{loadXls(e.target.files);e.target.value="";};
+const drop=$("drop");
+["dragenter","dragover"].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.add("over");}));
+["dragleave","drop"].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.remove("over");}));
+drop.addEventListener("drop",e=>loadXls(e.dataTransfer.files));
+$("impBranch").onchange=e=>{S.imp.branch=e.target.value;save();autoAssign();renderImp();};
+$("impTheft").addEventListener("change",e=>{const k=e.target.dataset.th;if(!k)return;S.imp.theft[k]=e.target.checked;save();renderImp();});
+$("tblImp").addEventListener("change",e=>{const i=e.target.dataset.ip;if(i==null)return;IMP[+i].period=e.target.value;renderImp();});
+$("impCancel").onclick=()=>{IMP=[];$("impPreview").classList.add("hide");};
+$("impApply").onclick=()=>{
+  let n=0;
+  IMP.forEach(f=>{const v=branchVals(f.rows,S.imp.branch); if(!v) return; ["gO","gC","fO","fC","tO","tC"].forEach(k=>S.cum[f.period][k]=v[k]); n++;});
+  const yr=IMP.find(f=>f.period==="year");
+  if($("impBureau").checked && yr){const b=bureauTotal(yr.rows);S.bureau.occ=b.occ;S.bureau.cl=b.cl;}
+  const d=new Date(); S.imp.last=`${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`;
+  save(); IMP=[]; $("impPreview").classList.add("hide"); renderInputs(); renderResults(); showLast(); toast(`已匯入 ${n} 個檔案（${S.imp.branch}）`);
+};
+function showLast(){ $("impLast").textContent=S.imp.last?`上次匯入：${S.imp.last}`:""; }
+showLast();
+
+renderAll();
+</script>
+<script>
+(function () {
+  function cur() { return document.documentElement.dataset.theme === "dark" ? "dark" : "light"; }
+  function sync() { var t = cur(); document.querySelectorAll("a[data-nav]").forEach(function (a) { a.href = a.getAttribute("data-nav") + "?theme=" + t; }); }
+  var b = document.getElementById("themeBtn");
+  if (b) b.addEventListener("click", function () {
+    var n = cur() === "dark" ? "light" : "dark"; document.documentElement.dataset.theme = n;
+    try { localStorage.setItem("pdf-tools-theme", n); } catch (e) {}
+    sync();
+  });
+  sync();
+})();
+</script>
+</body>
+</html>

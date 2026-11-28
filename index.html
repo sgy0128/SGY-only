@@ -60,6 +60,8 @@
   a.tool.organize { --c: var(--purple); --cs: var(--purple-soft); }
   a.tool.batch { --c: var(--rose); --cs: var(--rose-soft); }
   a.tool.register { --c: #2f855a; --cs: rgba(47,133,90,.14); }
+  a.tool.rate { --c: #0e7490; --cs: rgba(14,116,144,.14); }
+  :root[data-theme="dark"] a.tool.rate { --c: #5fd0e8; --cs: rgba(95,208,232,.16); }
   a.tool:hover, a.tool:focus-visible { transform: translateY(-3px); border-color: var(--c); outline: none; box-shadow: 0 10px 26px var(--shadow-h); }
   .ico { width: 56px; height: 56px; border-radius: 16px; background: var(--cs); color: var(--c);
     display: flex; align-items: center; justify-content: center; }
@@ -87,7 +89,7 @@
   <header class="top">
     <div class="wrap">
       <h1>SGY工具箱</h1>
-      <p class="sub">流水號核對、陳報單登記、流水號管制表，集中在這裡。選一個工具開始吧。</p>
+      <p class="sub">流水號核對、陳報單登記、流水號管制表、破獲率試算，集中在這裡。選一個工具開始吧。</p>
       <span class="badge"><span class="dot"></span>檔案預設只在你的瀏覽器內處理，不會上傳</span>
     </div>
   </header>
@@ -122,6 +124,15 @@
           <div class="tags"><span>月份管制</span><span>待處理清單</span><span>匯出 Excel</span></div>
           <span class="go">開啟工具 →</span>
         </a>
+        <a class="tool rate" href="clearance-rate.html" data-nav="clearance-rate.html">
+          <span class="ico" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h16"/><rect x="5" y="12" width="3.5" height="6" rx="1"/><rect x="10.25" y="8" width="3.5" height="10" rx="1"/><rect x="15.5" y="4" width="3.5" height="14" rx="1"/></svg>
+          </span>
+          <h2>破獲率試算</h2>
+          <p>輸入年、月、週累計與本日數據，算出各期預計輸入數、尚須輸入數與破獲率；可直接匯入系統報表（.xls），內附常用字句。</p>
+          <div class="tags"><span>匯入 .xls</span><span>尚須輸入數</span><span>常用字句</span></div>
+          <span class="go">開啟工具 →</span>
+        </a>
       </div>
 
 
@@ -132,6 +143,8 @@
           <li>「流水號核對與合併」和「陳報單登記」第一次開啟需要連網，用來載入 PDF 處理元件。</li>
           <li>「陳報單登記」的 AI 輔助是選用功能，要自己填入金鑰並勾選才會啟用；啟用後會把頁面圖片送到 Google Gemini 辨識，請先確認單位規定。</li>
           <li>「流水號管制表」的資料存在這台電腦的這個瀏覽器裡，換電腦或清除瀏覽資料就會消失，請定期用「備份（JSON）」或「匯出 Excel」留一份。</li>
+          <li>「流水號管制表」的匯出／匯入 Excel 需要連網載入元件；JSON 備份不需要。</li>
+          <li>「破獲率試算」的資料同樣存在這台電腦的這個瀏覽器裡，請定期按「備份 JSON」；匯入系統報表 .xls 不需要連網。</li>
           <li>右上角可以切換深色或淺色，所有工具頁面會使用同一個主題。</li>
         </ul>
       </section>
